@@ -1,10 +1,11 @@
+#[derive(Debug)]
 pub(crate) enum Dir {
     UP,
     LEFT,
     DOWN,
     RIGHT,
 }
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub(crate) struct Coord {
     pub x: usize,
     pub y: usize,
