@@ -5,37 +5,53 @@ pub(crate) enum Dir {
     DOWN,
     RIGHT,
 }
+impl Dir {
+    pub fn turn(&self) -> Self {
+        match *self {
+            Dir::UP => Dir::LEFT,
+            Dir::LEFT => Dir::DOWN,
+            Dir::DOWN => Dir::RIGHT,
+            Dir::RIGHT => Dir::UP,
+        }
+    }
+}
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub(crate) struct Coord {
     pub x: usize,
     pub y: usize,
 }
 impl Coord {
-    pub fn next_cell(&self, dir: &Dir) -> Coord {
+    pub fn next_cell(&self, dir: &Dir) -> Option<Coord> {
         match dir {
             Dir::UP => {
-                return Coord {
+                return Some(Coord {
                     x: self.x,
                     y: self.y + 1,
-                }
+                })
             }
             Dir::LEFT => {
-                return Coord {
+                return Some(Coord {
                     x: self.x + 1,
                     y: self.y,
-                }
+                })
             }
             Dir::DOWN => {
-                return Coord {
+                if self.y == 0 {
+                    return None;
+                }
+                return Some(Coord {
                     x: self.x,
                     y: self.y - 1,
-                }
+                });
             }
             Dir::RIGHT => {
-                return Coord {
+                if self.x == 0 {
+                    return None;
+                }
+                return Some(Coord {
                     x: self.x - 1,
                     y: self.y,
-                }
+                });
             }
         }
     }

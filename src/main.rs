@@ -9,7 +9,10 @@ fn main() {
     println!("{}", grid);
     grid.put_ant(Coord { x: 0, y: 0 });
     println!("{}", grid);
-    grid.run_round();
-    println!("{}", grid);
-    println!("Hello, world!");
+    for i in 0..20 {
+        grid.run_round();
+        if i % 5 == 0 {
+            println!("{}", grid);
+        }
+    }
 }

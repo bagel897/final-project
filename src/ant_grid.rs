@@ -3,13 +3,14 @@ use crate::{
     grid_elements::{ant::Ant, grid_element::GridElement},
 };
 use std::{
+    cell::RefCell,
     collections::{HashMap, VecDeque},
     fmt::Display,
     rc::Rc,
 };
 pub(crate) struct AntGrid {
-    grid: HashMap<Coord, Rc<dyn GridElement>>,
-    queue: VecDeque<Box<dyn GridElement>>,
+    grid: HashMap<Coord, Rc<RefCell<dyn GridElement>>>,
+    queue: VecDeque<Rc<RefCell<dyn GridElement>>>,
     rows: usize,
     cols: usize,
 }
@@ -22,39 +23,58 @@ impl AntGrid {
             rows,
         }
     }
+    pub fn does_exist(&self, coord: &Coord) -> bool {
+        if coord.x >= self.cols || coord.y >= self.rows {
+            return false;
+        }
+        return true;
+    }
     pub fn is_blocked(&self, coord: &Coord) -> bool {
+        if !self.does_exist(coord) {
+            return true;
+        }
         let get = self.grid.get(coord);
 
-        return get.map_or(false, |g| return g.exists());
+        return get.map_or(false, |g| {
+            return g.borrow().exists();
+        });
     }
     fn run_decide(&mut self) {
+        let mut new_grid = HashMap::new();
         let mut other_queue = VecDeque::new();
         while !self.queue.is_empty() {
-            let mut ant = self.queue.pop_front().unwrap();
-            ant.decide(self);
+            let ant = self.queue.pop_front().unwrap();
+            let c = ant.borrow_mut().decide(self);
+            new_grid.insert(c, ant.clone());
             other_queue.push_back(ant);
         }
         while !other_queue.is_empty() {
             let ant = other_queue.pop_front().unwrap();
             self.queue.push_back(ant);
         }
+        self.grid = new_grid;
     }
     pub fn run_round(&mut self) {
         self.run_decide();
     }
     pub fn put_ant(&mut self, pos: Coord) {
-        let ant = Box::new(Ant::new(&pos));
-        // self.grid.insert(pos, ant.clone());
+        let ant = Rc::new(RefCell::new(Ant::new(&pos)));
+        self.grid.insert(pos, ant.clone());
         self.queue.push_back(ant);
     }
 }
 impl Display for AntGrid {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for x in 0..self.rows {
+        for i in 0..self.rows {
+            let y = self.rows - i - 1;
             write!(f, "|");
-            for y in 0..self.cols {
+            for x in 0..self.cols {
                 if self.grid.contains_key(&Coord { x, y }) {
-                    write!(f, " {:?} |", self.grid.get(&Coord { x, y }));
+                    write!(
+                        f,
+                        " {:?} |",
+                        self.grid.get(&Coord { x, y }).unwrap().borrow()
+                    );
                 } else {
                     write!(f, "  |");
                 }

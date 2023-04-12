@@ -20,15 +20,18 @@ impl GridElement for Ant {
         return true;
     }
     fn decide(&mut self, grid: &AntGrid) -> Coord {
-        if grid.is_blocked(&self.next()) {
-            todo!();
+        let next = self.next();
+        if next.is_none() || grid.is_blocked(&next.unwrap()) {
+            self.dir = self.dir.turn();
+            return self.pos;
         } else {
-            return self.next();
+            self.pos = next.unwrap();
+            return next.unwrap();
         }
     }
 }
 impl Ant {
-    pub(self) fn next(&self) -> Coord {
+    pub(self) fn next(&self) -> Option<Coord> {
         return self.pos.next_cell(&self.dir);
     }
 }
