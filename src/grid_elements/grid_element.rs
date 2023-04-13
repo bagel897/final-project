@@ -1,8 +1,8 @@
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 
 use crate::{ant_grid::AntGrid, coord::Coord};
 
-pub(crate) trait GridElement: Debug {
+pub(crate) trait GridElement: Debug + Display {
     fn exists(&self) -> bool;
     fn new(pos: &Coord) -> Self
     where

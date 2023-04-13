@@ -1,6 +1,6 @@
 use crate::{
     coord::Coord,
-    grid_elements::{ant::Ant, grid_element::GridElement},
+    grid_elements::{ant::Ant, empty::Empty, grid_element::GridElement},
 };
 use std::{
     cell::RefCell,
@@ -67,15 +67,17 @@ impl Display for AntGrid {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for i in 0..self.rows {
             let y = self.rows - i - 1;
-            write!(f, "|");
+            write!(f, "|")?;
             for x in 0..self.cols {
-                if self.grid.contains_key(&Coord { x, y }) {
-                    write!(f, " x |");
-                } else {
-                    write!(f, "   |");
-                }
+                write!(f, " ")?;
+
+                match self.grid.get(&Coord { x, y }) {
+                    None => Empty::new(&Coord { x, y }).fmt(f),
+                    Some(i) => i.borrow().fmt(f),
+                }?;
+                write!(f, " |")?;
             }
-            write!(f, "\n");
+            write!(f, "\n")?;
         }
         Ok(())
     }

@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::{
     ant_grid::AntGrid,
     coord::{Coord, Dir},
@@ -28,6 +30,11 @@ impl GridElement for Ant {
             self.pos = next.unwrap();
             return next.unwrap();
         }
+    }
+}
+impl Display for Ant {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "x")
     }
 }
 impl Ant {

@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::coord::Coord;
 
 use super::grid_element::GridElement;
@@ -17,5 +19,10 @@ impl GridElement for Empty {
     }
     fn decide(&mut self, grid: &crate::ant_grid::AntGrid) -> Coord {
         return self.pos;
+    }
+}
+impl Display for Empty {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, " ")
     }
 }
