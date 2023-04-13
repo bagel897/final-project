@@ -34,12 +34,6 @@ impl GUIrunner {
 impl eframe::App for GUIrunner {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         let input = egui::RawInput::default();
-        self.runner.run(self.speed, None);
-        egui::Window::new("Ant Simulation").show(&ctx, |ui| {
-            self.texture
-                .set(get_image(&self.runner.grid), TextureOptions::default());
-            ui.image(&self.texture, self.texture.size_vec2());
-        });
         egui::SidePanel::right("Current Round Options").show(&ctx, |ui| {
             ui.add(egui::Slider::new(&mut self.speed, 1..=100).text("Speed"));
             ui.add(egui::Slider::new(&mut self.runner.grid.smell, 0.01..=1.0).text("Smell"));
@@ -49,6 +43,15 @@ impl eframe::App for GUIrunner {
             if ui.button("reset").clicked() {
                 self.reset();
             }
+        });
+        self.runner.run(self.speed, None);
+        egui::Window::new("Ant Simulation").show(&ctx, |ui| {
+            self.texture
+                .set(get_image(&self.runner.grid), TextureOptions::default());
+            ui.with_layout(
+                egui::Layout::centered_and_justified(egui::Direction::TopDown),
+                |ui| ui.image(&self.texture, self.texture.size_vec2()),
+            );
         });
         ctx.request_repaint();
     }
