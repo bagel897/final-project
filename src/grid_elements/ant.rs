@@ -1,4 +1,6 @@
-use std::fmt::Display;
+use std::{collections::HashMap, fmt::Display};
+
+use strum::IntoEnumIterator;
 
 use crate::{
     ant_grid::AntGrid,
@@ -24,7 +26,7 @@ impl GridElement for Ant {
         return Ant {
             dir: Dir::UP,
             pos: pos.clone(),
-            state: State::Wandering,
+            state: State::Food,
         };
     }
     fn exists(&self) -> bool {
@@ -34,7 +36,7 @@ impl GridElement for Ant {
     fn decide(&mut self, grid: &AntGrid) -> Coord {
         match self.state {
             State::Wandering => self.wander(grid),
-            State::Food => todo!(),
+            State::Food => self.find_food(grid),
             State::Battle => todo!(),
             State::Carrying => todo!(),
         }
@@ -54,6 +56,27 @@ impl Display for Ant {
 impl Ant {
     pub(self) fn next(&self) -> Option<Coord> {
         return self.pos.next_cell(&self.dir);
+    }
+    fn find_food(&mut self, grid: &AntGrid) -> Coord {
+        let mut min_val = f64::MAX;
+        let mut min_cell = Option::None;
+        for dir in Dir::iter() {
+            let min = match self.get_dist(grid, &dir) {
+                None => continue,
+                Some(i) => i,
+            };
+            if min.1 < min_val {
+                min_val = min.1;
+                min_cell = Some(min.0);
+            }
+        }
+        self.pos = min_cell.unwrap_or(self.pos);
+        return self.pos;
+    }
+    fn get_dist(&self, grid: &AntGrid, dir: &Dir) -> Option<(Coord, f64)> {
+        let pos = self.pos.next_cell(&dir)?;
+        let res = grid.distance_to_food(&pos)?;
+        return Some((pos, res));
     }
 
     fn wander(&mut self, grid: &AntGrid) -> Coord {

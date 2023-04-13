@@ -36,6 +36,7 @@ impl AntGrid {
             return true;
         }
         let get = self.grid.get(coord);
+        // TODO: handle two entering same space
 
         return get.map_or(false, |g| {
             return g.borrow().exists();
@@ -59,6 +60,18 @@ impl AntGrid {
             new_grid.insert(c, f.clone());
         }
         self.grid = new_grid;
+    }
+    pub fn distance_to_food(&self, pt: &Coord) -> Option<f64> {
+        if self.is_blocked(pt) {
+            return None;
+        }
+        return self
+            .food
+            .iter()
+            .map(|f| -> f64 {
+                return pt.distance(&f.borrow().pos);
+            })
+            .min_by(|x, y| x.total_cmp(y));
     }
     pub fn run_round(&mut self) {
         self.run_decide();
