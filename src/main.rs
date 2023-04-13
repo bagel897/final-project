@@ -10,7 +10,7 @@ fn main() {
     let cols = 20;
     let rows = cols;
     let num_rounds = 100;
-    let interval = 10;
+    let interval = 5;
     let mut runner = Runner::new(rows, cols);
     runner.put_teams();
     runner.put_ants(num_ants);

@@ -17,7 +17,6 @@ use std::{
 };
 pub(crate) struct AntGrid {
     grid: HashMap<Coord, Rc<RefCell<dyn GridElement>>>,
-    new_grid: HashMap<Coord, Rc<RefCell<dyn GridElement>>>,
     ant_queue: VecDeque<Rc<RefCell<dyn GridElement>>>,
     food: Vec<Rc<RefCell<Food>>>,
     pub rows: usize,
@@ -28,7 +27,6 @@ impl AntGrid {
     pub fn new(rows: usize, cols: usize) -> Self {
         AntGrid {
             grid: HashMap::new(),
-            new_grid: HashMap::new(),
             ant_queue: VecDeque::new(),
             food: Vec::new(),
             cols,
@@ -46,11 +44,7 @@ impl AntGrid {
         if !self.does_exist(coord) {
             return true;
         }
-        let mut get = self.grid.get(coord);
-        if get.is_some() && get.unwrap().borrow().exists() {
-            return true;
-        }
-        get = self.new_grid.get(coord);
+        let get = self.grid.get(coord);
         return get.map_or(false, |g| {
             return g.borrow().exists();
         });
@@ -59,19 +53,16 @@ impl AntGrid {
         let mut other_queue = VecDeque::new();
         while !self.ant_queue.is_empty() {
             let ant = self.ant_queue.pop_front().unwrap();
+            let old_pos = ant.borrow().pos().clone();
             let c = ant.borrow_mut().decide(self);
+            self.grid.remove(&old_pos);
             if c.is_none() {
                 continue;
             }
-            self.new_grid.insert(c.unwrap(), ant.clone());
+            self.grid.insert(c.unwrap(), ant.clone());
             other_queue.push_back(ant);
         }
-        while !other_queue.is_empty() {
-            let ant = other_queue.pop_front().unwrap();
-            self.ant_queue.push_back(ant);
-        }
-        self.grid = self.new_grid.clone();
-        self.new_grid = HashMap::new();
+        self.ant_queue = other_queue;
     }
     fn adjust(&self, distance: f64) -> f64 {
         let mut rng = rand::thread_rng();
