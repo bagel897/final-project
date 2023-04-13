@@ -14,5 +14,8 @@ pub(crate) trait GridElement: Debug + Display {
     fn is_food(&self) -> bool {
         return false;
     }
+    fn is_hive(&self) -> bool {
+        return false;
+    }
     fn attacked(&mut self, _damage: usize) {}
 }

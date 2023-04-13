@@ -30,6 +30,6 @@ impl Food {
 }
 impl Display for Food {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", "f".green())
+        write!(f, "{}", "f".green().bold())
     }
 }

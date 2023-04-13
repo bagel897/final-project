@@ -91,6 +91,10 @@ impl Ant {
                 None => continue,
                 Some(i) => i,
             };
+            if grid.is_hive_same_team(&pos, self.team) {
+                self.state = State::Food;
+                return self.pos;
+            }
             let min = match self.get_dist(&pos, grid) {
                 None => continue,
                 Some(i) => i,

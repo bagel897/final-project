@@ -137,6 +137,15 @@ impl AntGrid {
 
         return ant.borrow().is_food();
     }
+    pub fn is_hive_same_team(&self, coord: &Coord, team: Team) -> bool {
+        if !self.does_exist(coord) {
+            return false;
+        }
+        let empty = empty(&coord);
+        let ant = self.grid.get(coord).unwrap_or(&empty);
+
+        return ant.borrow().is_hive() && ant.borrow().team().map_or(false, |t| t != team);
+    }
     pub fn put_ant(&mut self, pos: Coord, team: &Team) {
         self.put(pos, Rc::new(RefCell::new(Ant::new(&pos, team))));
     }

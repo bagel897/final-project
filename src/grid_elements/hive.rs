@@ -41,6 +41,9 @@ impl GridElement for Hive {
         }
         return Some(self.pos);
     }
+    fn is_hive(&self) -> bool {
+        return true;
+    }
 }
 impl Hive {
     pub fn new(pos: Coord, team: Team) -> Self {
@@ -53,6 +56,6 @@ impl Hive {
 }
 impl Display for Hive {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", "h".color(self.team.color))
+        write!(f, "{}", "h".color(self.team.color).bold())
     }
 }
