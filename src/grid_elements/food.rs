@@ -19,6 +19,9 @@ impl GridElement for Food {
     fn decide(&mut self, grid: &mut crate::ant_grid::AntGrid) -> Option<Coord> {
         return Some(self.pos);
     }
+    fn is_food(&self) -> bool {
+        return true;
+    }
 }
 impl Food {
     pub fn new(pos: &Coord) -> Self {

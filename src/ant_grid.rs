@@ -20,9 +20,13 @@ pub(crate) struct AntGrid {
     grid: HashMap<Coord, Rc<RefCell<dyn GridElement>>>,
     ant_queue: VecDeque<Rc<RefCell<dyn GridElement>>>,
     food: Vec<Rc<RefCell<Food>>>,
+    hives: HashMap<usize, Vec<Rc<RefCell<Hive>>>>,
     pub rows: usize,
     pub cols: usize,
     smell: f64,
+}
+fn empty(pos: &Coord) -> Rc<RefCell<dyn GridElement>> {
+    Rc::new(RefCell::new(Empty::new(pos)))
 }
 impl AntGrid {
     pub fn new(rows: usize, cols: usize) -> Self {
@@ -30,6 +34,7 @@ impl AntGrid {
             grid: HashMap::new(),
             ant_queue: VecDeque::new(),
             food: Vec::new(),
+            hives: HashMap::new(),
             cols,
             rows,
             smell: 0.5,
@@ -84,6 +89,21 @@ impl AntGrid {
             })
             .min_by(|x, y| x.total_cmp(y));
     }
+    pub fn distance_to_hive(&self, pt: &Coord, team: &Team) -> Option<f64> {
+        if self.is_blocked(pt) {
+            return None;
+        }
+        match self.hives.get(&team.id) {
+            None => None,
+
+            Some(i) => i
+                .iter()
+                .map(|f| -> f64 {
+                    return pt.distance(&f.borrow().pos());
+                })
+                .min_by(|x, y| x.total_cmp(y)),
+        }
+    }
     pub fn run_round(&mut self) {
         self.run_decide();
     }
@@ -108,29 +128,42 @@ impl AntGrid {
             Some(t) => &t != team,
         };
     }
+    pub fn is_food(&self, coord: &Coord, team: &Team) -> bool {
+        if !self.does_exist(coord) {
+            return false;
+        }
+        let empty = empty(&coord);
+        let ant = self.grid.get(coord).unwrap_or(&empty);
+
+        return ant.borrow().is_food();
+    }
     pub fn put_ant(&mut self, pos: Coord, team: &Team) {
         self.put(pos, Rc::new(RefCell::new(Ant::new(&pos, team))));
     }
     pub fn put_hive(&mut self, pos: Coord, team: Team) {
-        self.put(pos, Rc::new(RefCell::new(Hive::new(pos, team))));
+        let hive = Rc::new(RefCell::new(Hive::new(pos, team)));
+        if self.put(pos, hive.clone()) {
+            let id = hive.borrow().team().unwrap().id;
+            self.hives
+                .entry(id)
+                .or_insert_with(|| Vec::new())
+                .push(hive);
+        }
     }
-    fn put(&mut self, pos: Coord, elem: Rc<RefCell<dyn GridElement>>) {
+    fn put(&mut self, pos: Coord, elem: Rc<RefCell<dyn GridElement>>) -> bool {
         assert!(self.does_exist(&pos));
         if self.is_blocked(&pos) {
-            return;
+            return false;
         }
         self.grid.insert(pos, elem.clone());
         self.ant_queue.push_back(elem);
+        return true;
     }
     pub fn put_food(&mut self, pos: Coord) {
-        assert!(self.does_exist(&pos));
-        if self.is_blocked(&pos) {
-            return;
-        }
         let food = Rc::new(RefCell::new(Food::new(&pos)));
-        self.grid.insert(pos, food.clone());
-        self.food.push(food.clone());
-        self.ant_queue.push_back(food);
+        if self.put(pos, food.clone()) {
+            self.food.push(food);
+        }
     }
 }
 impl Display for AntGrid {

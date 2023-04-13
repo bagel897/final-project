@@ -44,7 +44,7 @@ impl GridElement for Ant {
             State::Wandering => Some(self.wander(grid)),
             State::Food => Some(self.find_food(grid)),
             State::Battle => Some(self.battle(grid)),
-            State::Carrying => todo!(),
+            State::Carrying => Some(self.carry(grid)),
             State::Dead => None,
         }
     }
@@ -83,6 +83,26 @@ impl Ant {
     pub(self) fn next(&self) -> Option<Coord> {
         return self.pos.next_cell(&self.dir);
     }
+    fn carry(&mut self, grid: &AntGrid) -> Coord {
+        let mut min_val = f64::MAX;
+        let mut min_cell = Option::None;
+        for dir in Dir::iter() {
+            let pos = match self.pos.next_cell(&dir) {
+                None => continue,
+                Some(i) => i,
+            };
+            let min = match self.get_dist(&pos, grid) {
+                None => continue,
+                Some(i) => i,
+            };
+            if min < min_val && !grid.is_blocked(&pos) {
+                min_val = min;
+                min_cell = Some(pos);
+            }
+        }
+        self.pos = min_cell.unwrap_or(self.pos);
+        return self.pos;
+    }
     fn battle(&mut self, grid: &AntGrid) -> Coord {
         let next = self.next();
         if next.is_some() {
@@ -112,25 +132,37 @@ impl Ant {
         let mut min_val = f64::MAX;
         let mut min_cell = Option::None;
         for dir in Dir::iter() {
-            if self.should_battle(grid, dir) {
-                return self.pos;
-            }
-            let min = match self.get_dist(grid, &dir) {
+            let pos = match self.pos.next_cell(&dir) {
                 None => continue,
                 Some(i) => i,
             };
-            if min.1 < min_val {
-                min_val = min.1;
-                min_cell = Some(min.0);
+            if self.should_battle(grid, dir) {
+                return self.pos;
+            }
+            if grid.is_food(&pos, &self.team) {
+                self.state = State::Carrying;
+                return self.pos;
+            }
+            let min = match self.get_dist(&pos, grid) {
+                None => continue,
+                Some(i) => i,
+            };
+
+            if min < min_val && !grid.is_blocked(&pos) {
+                min_val = min;
+                min_cell = Some(pos);
             }
         }
         self.pos = min_cell.unwrap_or(self.pos);
         return self.pos;
     }
-    fn get_dist(&self, grid: &AntGrid, dir: &Dir) -> Option<(Coord, f64)> {
-        let pos = self.pos.next_cell(&dir)?;
-        let res = grid.distance_to_food(&pos)?;
-        return Some((pos, res));
+    fn get_dist(&self, pos: &Coord, grid: &AntGrid) -> Option<f64> {
+        let res = match self.state {
+            State::Food => grid.distance_to_food(&pos)?,
+            State::Carrying => grid.distance_to_hive(&pos, &self.team)?,
+            _ => return None,
+        };
+        return Some(res);
     }
 
     fn wander(&mut self, grid: &AntGrid) -> Coord {
