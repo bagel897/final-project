@@ -15,8 +15,9 @@ enum State {
     Food,
     Battle,
     Carrying,
+    Dead,
 }
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Team {
     pub color: Color,
     pub id: usize,
@@ -36,13 +37,17 @@ impl GridElement for Ant {
         return true;
     }
 
-    fn decide(&mut self, grid: &AntGrid) -> Coord {
+    fn decide(&mut self, grid: &AntGrid) -> Option<Coord> {
         match self.state {
-            State::Wandering => self.wander(grid),
-            State::Food => self.find_food(grid),
-            State::Battle => todo!(),
+            State::Wandering => Some(self.wander(grid)),
+            State::Food => Some(self.find_food(grid)),
+            State::Battle => Some(self.battle(grid)),
             State::Carrying => todo!(),
+            State::Dead => None,
         }
+    }
+    fn team(&self) -> Option<Team> {
+        Some(self.team)
     }
 }
 impl Display for Ant {
@@ -52,6 +57,7 @@ impl Display for Ant {
             State::Carrying => "c",
             State::Food => "s",
             State::Battle => "b",
+            State::Dead => "d",
         };
         write!(f, "{}", state.color(self.team.color))
     }
@@ -68,10 +74,37 @@ impl Ant {
     pub(self) fn next(&self) -> Option<Coord> {
         return self.pos.next_cell(&self.dir);
     }
+    fn battle(&mut self, grid: &AntGrid) -> Coord {
+        let next = self.next();
+        if next.is_some() {
+            let n = next.unwrap();
+            if grid.is_enemy(&n, &self.team) {
+                grid.attack(&n);
+            }
+        } else {
+            self.state = State::Wandering;
+        }
+        return self.pos;
+    }
+    fn should_battle(&mut self, grid: &AntGrid, dir: Dir) -> bool {
+        let coord = match self.pos().next_cell(&self.dir) {
+            None => return false,
+            Some(i) => i,
+        };
+        if grid.is_enemy(&coord, &self.team) {
+            self.dir = dir.clone();
+            self.state = State::Battle;
+            return true;
+        }
+        return false;
+    }
     fn find_food(&mut self, grid: &AntGrid) -> Coord {
         let mut min_val = f64::MAX;
         let mut min_cell = Option::None;
         for dir in Dir::iter() {
+            if self.should_battle(grid, dir) {
+                return self.pos;
+            }
             let min = match self.get_dist(grid, &dir) {
                 None => continue,
                 Some(i) => i,
@@ -91,6 +124,9 @@ impl Ant {
     }
 
     fn wander(&mut self, grid: &AntGrid) -> Coord {
+        if self.should_battle(grid, self.dir) {
+            return self.pos;
+        }
         match self.next() {
             None => {
                 self.dir = self.dir.turn();

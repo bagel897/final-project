@@ -60,16 +60,15 @@ impl AntGrid {
         while !self.ant_queue.is_empty() {
             let ant = self.ant_queue.pop_front().unwrap();
             let c = ant.borrow_mut().decide(self);
-            self.new_grid.insert(c, ant.clone());
+            if c.is_none() {
+                continue;
+            }
+            self.new_grid.insert(c.unwrap(), ant.clone());
             other_queue.push_back(ant);
         }
         while !other_queue.is_empty() {
             let ant = other_queue.pop_front().unwrap();
             self.ant_queue.push_back(ant);
-        }
-        for f in self.food.iter() {
-            let c = f.borrow_mut().decide(self);
-            self.new_grid.insert(c, f.clone());
         }
         self.grid = self.new_grid.clone();
         self.new_grid = HashMap::new();
@@ -96,6 +95,23 @@ impl AntGrid {
     pub fn run_round(&mut self) {
         self.run_decide();
     }
+    pub fn attack(&self, coord: &Coord) {
+        todo!();
+    }
+    pub fn is_enemy(&self, coord: &Coord, team: &Team) -> bool {
+        if !self.does_exist(coord) {
+            return false;
+        }
+        let ant = self.grid.get(coord);
+        if ant.is_none() {
+            return false;
+        }
+        let other_team = ant.unwrap().borrow().team();
+        return match other_team {
+            None => false,
+            Some(t) => &t != team,
+        };
+    }
     pub fn put_ant(&mut self, pos: Coord, team: &Team) {
         assert!(self.does_exist(&pos));
         if self.is_blocked(&pos) {
@@ -112,7 +128,8 @@ impl AntGrid {
         }
         let food = Rc::new(RefCell::new(Food::new(&pos)));
         self.grid.insert(pos, food.clone());
-        self.food.push(food);
+        self.food.push(food.clone());
+        self.ant_queue.push_back(food);
     }
 }
 impl Display for AntGrid {

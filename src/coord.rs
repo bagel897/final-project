@@ -1,5 +1,5 @@
 use strum_macros::EnumIter;
-#[derive(Debug, EnumIter, PartialEq, Eq, Hash)]
+#[derive(Debug, EnumIter, PartialEq, Eq, Hash, Clone, Copy)]
 pub(crate) enum Dir {
     UP,
     LEFT,
