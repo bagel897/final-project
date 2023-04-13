@@ -2,7 +2,12 @@ use rand::{distributions::Uniform, Rng};
 
 use crate::{
     coord::Coord,
-    grid_elements::{ant::Ant, empty::Empty, food::Food, grid_element::GridElement},
+    grid_elements::{
+        ant::{Ant, Team},
+        empty::Empty,
+        food::Food,
+        grid_element::GridElement,
+    },
 };
 use std::{
     cell::RefCell,
@@ -15,8 +20,8 @@ pub(crate) struct AntGrid {
     new_grid: HashMap<Coord, Rc<RefCell<dyn GridElement>>>,
     ant_queue: VecDeque<Rc<RefCell<dyn GridElement>>>,
     food: Vec<Rc<RefCell<Food>>>,
-    rows: usize,
-    cols: usize,
+    pub rows: usize,
+    pub cols: usize,
     smell: f64,
 }
 impl AntGrid {
@@ -54,9 +59,7 @@ impl AntGrid {
         let mut other_queue = VecDeque::new();
         while !self.ant_queue.is_empty() {
             let ant = self.ant_queue.pop_front().unwrap();
-            // assert!(!self.is_blocked(ant.borrow().pos()));
             let c = ant.borrow_mut().decide(self);
-            // assert!(!self.is_blocked(&c));
             self.new_grid.insert(c, ant.clone());
             other_queue.push_back(ant);
         }
@@ -93,12 +96,12 @@ impl AntGrid {
     pub fn run_round(&mut self) {
         self.run_decide();
     }
-    pub fn put_ant(&mut self, pos: Coord) {
+    pub fn put_ant(&mut self, pos: Coord, team: &Team) {
         assert!(self.does_exist(&pos));
         if self.is_blocked(&pos) {
             return;
         }
-        let ant = Rc::new(RefCell::new(Ant::new(&pos)));
+        let ant = Rc::new(RefCell::new(Ant::new(&pos, team)));
         self.grid.insert(pos, ant.clone());
         self.ant_queue.push_back(ant);
     }

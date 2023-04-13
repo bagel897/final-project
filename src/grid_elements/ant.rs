@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+use colored::{Color, Colorize};
 use strum::IntoEnumIterator;
 
 use crate::{
@@ -15,22 +16,21 @@ enum State {
     Battle,
     Carrying,
 }
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct Team {
+    pub color: Color,
+    pub id: usize,
+}
 #[derive(Debug)]
 pub(crate) struct Ant {
     dir: Dir,
     pos: Coord,
     state: State,
+    team: Team,
 }
 impl GridElement for Ant {
     fn pos(&self) -> &Coord {
         return &self.pos;
-    }
-    fn new(pos: &Coord) -> Self {
-        return Ant {
-            dir: Dir::UP,
-            pos: pos.clone(),
-            state: State::Food,
-        };
     }
     fn exists(&self) -> bool {
         return true;
@@ -53,10 +53,18 @@ impl Display for Ant {
             State::Food => "s",
             State::Battle => "b",
         };
-        write!(f, "{}", state)
+        write!(f, "{}", state.color(self.team.color))
     }
 }
 impl Ant {
+    pub fn new(pos: &Coord, team: &Team) -> Self {
+        return Ant {
+            dir: Dir::UP,
+            pos: pos.clone(),
+            state: State::Food,
+            team: team.clone(),
+        };
+    }
     pub(self) fn next(&self) -> Option<Coord> {
         return self.pos.next_cell(&self.dir);
     }
