@@ -1,18 +1,19 @@
 use crate::ant_grid::AntGrid;
 use crate::tui_runner::Runner;
-use egui::{ColorImage, TextureHandle, TextureOptions};
+use egui::{TextureHandle, TextureOptions};
 
 use super::image_utils::get_image;
 struct GUIrunner {
     runner: Runner,
     texture: TextureHandle,
     speed: usize,
+    rows: usize,
+    cols: usize,
 }
 impl GUIrunner {
     pub fn new(rows: usize, cols: usize, cc: &eframe::CreationContext<'_>) -> Self {
         let mut runner = Runner::new(rows, cols);
         runner.put_teams();
-        runner.put_food(10);
         let image = get_image(&runner.grid);
         let texture = cc
             .egui_ctx
@@ -21,18 +22,33 @@ impl GUIrunner {
             runner,
             texture,
             speed: 1,
+            rows,
+            cols,
         }
+    }
+    fn reset(&mut self) {
+        self.runner = Runner::new(self.rows, self.cols);
+        self.runner.put_teams();
     }
 }
 impl eframe::App for GUIrunner {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         let input = egui::RawInput::default();
-        egui::Window::new("My Window").show(&ctx, |ui| {
-            self.runner.run(self.speed, None);
+        self.runner.run(self.speed, None);
+        egui::Window::new("Ant Simulation").show(&ctx, |ui| {
             self.texture
                 .set(get_image(&self.runner.grid), TextureOptions::default());
             ui.image(&self.texture, self.texture.size_vec2());
-            ui.add(egui::Slider::new(&mut self.speed, 1..=100));
+        });
+        egui::SidePanel::right("Current Round Options").show(&ctx, |ui| {
+            ui.add(egui::Slider::new(&mut self.speed, 1..=100).text("Speed"));
+            ui.add(egui::Slider::new(&mut self.runner.grid.smell, 0.01..=1.0).text("Smell"));
+            if ui.button("Add food").clicked() {
+                self.runner.put_food(1);
+            }
+            if ui.button("reset").clicked() {
+                self.reset();
+            }
         });
         ctx.request_repaint();
     }

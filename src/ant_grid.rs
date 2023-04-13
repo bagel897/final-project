@@ -23,7 +23,7 @@ pub(crate) struct AntGrid {
     hives: HashMap<usize, Vec<Rc<RefCell<Hive>>>>,
     pub rows: usize,
     pub cols: usize,
-    smell: f64,
+    pub smell: f64,
 }
 fn empty(pos: &Coord) -> Rc<RefCell<dyn GridElement>> {
     Rc::new(RefCell::new(Empty::new(pos)))
