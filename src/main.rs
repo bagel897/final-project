@@ -1,3 +1,5 @@
+use gui::gui_runner::run_gui;
+
 use crate::tui_runner::Runner;
 mod ant_grid;
 mod coord;
@@ -5,7 +7,7 @@ mod grid_elements;
 mod gui;
 mod tui_runner;
 
-fn main() {
+fn run_tui() {
     let num_ants = 0;
     let num_food = 4;
     let cols = 40;
@@ -18,4 +20,7 @@ fn main() {
     runner.put_food(num_food);
     runner.print();
     runner.run(num_rounds, interval);
+}
+fn main() {
+    run_gui(500, 1000);
 }

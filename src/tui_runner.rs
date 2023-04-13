@@ -4,7 +4,7 @@ use rand::{seq::IteratorRandom, thread_rng, Rng};
 use crate::{ant_grid::AntGrid, coord::Coord, grid_elements::ant::Team};
 
 pub(crate) struct Runner {
-    grid: AntGrid,
+    pub grid: AntGrid,
     rng: rand::rngs::ThreadRng,
     teams: Vec<Team>,
 }
