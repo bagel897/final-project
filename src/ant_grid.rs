@@ -70,13 +70,9 @@ impl Display for AntGrid {
             write!(f, "|");
             for x in 0..self.cols {
                 if self.grid.contains_key(&Coord { x, y }) {
-                    write!(
-                        f,
-                        " {:?} |",
-                        self.grid.get(&Coord { x, y }).unwrap().borrow()
-                    );
+                    write!(f, " x |");
                 } else {
-                    write!(f, "  |");
+                    write!(f, "   |");
                 }
             }
             write!(f, "\n");
