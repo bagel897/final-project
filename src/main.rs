@@ -2,6 +2,7 @@ use crate::tui_runner::Runner;
 mod ant_grid;
 mod coord;
 mod grid_elements;
+mod gui;
 mod tui_runner;
 
 fn main() {

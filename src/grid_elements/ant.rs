@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
 use colored::{Color, Colorize};
+use image::Rgb;
 use strum::IntoEnumIterator;
 
 use crate::{
@@ -19,9 +20,18 @@ enum State {
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Team {
-    pub color: Color,
+    pub color: Rgb<u8>,
     pub id: usize,
     pub health: usize,
+}
+impl Into<Color> for Team {
+    fn into(self) -> Color {
+        return Color::TrueColor {
+            r: self.color.0[0],
+            g: self.color.0[1],
+            b: self.color.0[2],
+        };
+    }
 }
 #[derive(Debug)]
 pub(crate) struct Ant {
@@ -57,6 +67,9 @@ impl GridElement for Ant {
             Some(i) => self.health = i,
         }
     }
+    fn color(&self) -> Rgb<u8> {
+        return self.team.color;
+    }
 }
 impl Display for Ant {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -67,7 +80,8 @@ impl Display for Ant {
             State::Battle => "b",
             State::Dead => "d",
         };
-        write!(f, "{}", state.color(self.team.color))
+        let color: Color = self.team.into();
+        write!(f, "{}", state.color(color))
     }
 }
 impl Ant {

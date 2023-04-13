@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use image::Rgb;
+
 use crate::coord::Coord;
 
 use super::grid_element::GridElement;
@@ -16,6 +18,9 @@ impl GridElement for Empty {
     }
     fn decide(&mut self, _grid: &mut crate::ant_grid::AntGrid) -> Option<Coord> {
         return None;
+    }
+    fn color(&self) -> Rgb<u8> {
+        return Rgb::from([0, 0, 0]);
     }
 }
 impl Empty {

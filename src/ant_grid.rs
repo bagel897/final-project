@@ -17,7 +17,7 @@ use std::{
     rc::Rc,
 };
 pub(crate) struct AntGrid {
-    grid: HashMap<Coord, Rc<RefCell<dyn GridElement>>>,
+    pub grid: HashMap<Coord, Rc<RefCell<dyn GridElement>>>,
     ant_queue: VecDeque<Rc<RefCell<dyn GridElement>>>,
     food: Vec<Rc<RefCell<Food>>>,
     hives: HashMap<usize, Vec<Rc<RefCell<Hive>>>>,

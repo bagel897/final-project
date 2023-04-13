@@ -1,4 +1,4 @@
-use colored::Color;
+use image::Rgb;
 use rand::{seq::IteratorRandom, thread_rng, Rng};
 
 use crate::{ant_grid::AntGrid, coord::Coord, grid_elements::ant::Team};
@@ -21,7 +21,7 @@ impl Runner {
         let y = self.rng.gen_range(0..self.grid.rows);
         Coord { x, y }
     }
-    fn put_team(&mut self, color: Color) {
+    fn put_team(&mut self, color: Rgb<u8>) {
         let team = Team {
             color,
             id: self.teams.len(),
@@ -32,9 +32,9 @@ impl Runner {
         self.grid.put_hive(rand, team);
     }
     pub fn put_teams(&mut self) {
-        self.put_team(Color::Red);
-        self.put_team(Color::Blue);
-        self.put_team(Color::White);
+        self.put_team(Rgb([255, 0, 0]));
+        self.put_team(Rgb([255, 0, 255]));
+        self.put_team(Rgb([0, 0, 255]));
     }
     pub fn put_ants(&mut self, num_ants: usize) {
         for _ in 0..num_ants {

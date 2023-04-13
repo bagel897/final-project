@@ -1,5 +1,7 @@
 use std::fmt::{Debug, Display};
 
+use image::Rgb;
+
 use crate::{ant_grid::AntGrid, coord::Coord};
 
 use super::ant::Team;
@@ -18,4 +20,5 @@ pub(crate) trait GridElement: Debug + Display {
         return false;
     }
     fn attacked(&mut self, _damage: usize) {}
+    fn color(&self) -> Rgb<u8>;
 }

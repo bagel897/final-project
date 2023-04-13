@@ -5,6 +5,7 @@ use crate::coord::Coord;
 use super::grid_element::GridElement;
 
 use ::colored::Colorize;
+use image::Rgb;
 #[derive(Debug)]
 pub(crate) struct Food {
     pub pos: Coord,
@@ -21,6 +22,9 @@ impl GridElement for Food {
     }
     fn is_food(&self) -> bool {
         return true;
+    }
+    fn color(&self) -> Rgb<u8> {
+        return Rgb::from([0, 255, 0]);
     }
 }
 impl Food {

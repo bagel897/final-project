@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
-use colored::Colorize;
+use colored::{Color, Colorize};
+use image::Rgb;
 use strum::IntoEnumIterator;
 
 use crate::coord::{Coord, Dir};
@@ -44,6 +45,9 @@ impl GridElement for Hive {
     fn is_hive(&self) -> bool {
         return true;
     }
+    fn color(&self) -> Rgb<u8> {
+        return self.team.color;
+    }
 }
 impl Hive {
     pub fn new(pos: Coord, team: Team) -> Self {
@@ -56,6 +60,7 @@ impl Hive {
 }
 impl Display for Hive {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", "h".color(self.team.color).bold())
+        let color: Color = self.team.into();
+        write!(f, "{}", "h".color(color).bold())
     }
 }
