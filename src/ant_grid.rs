@@ -1,6 +1,6 @@
 use crate::{
     coord::Coord,
-    grid_elements::{ant::Ant, empty::Empty, grid_element::GridElement},
+    grid_elements::{ant::Ant, empty::Empty, food::Food, grid_element::GridElement},
 };
 use std::{
     cell::RefCell,
@@ -58,9 +58,16 @@ impl AntGrid {
         self.run_decide();
     }
     pub fn put_ant(&mut self, pos: Coord) {
+        assert!(self.does_exist(&pos));
         let ant = Rc::new(RefCell::new(Ant::new(&pos)));
         self.grid.insert(pos, ant.clone());
         self.queue.push_back(ant);
+    }
+    pub fn put_food(&mut self, pos: Coord) {
+        assert!(self.does_exist(&pos));
+        let food = Rc::new(RefCell::new(Food::new(&pos)));
+        self.grid.insert(pos, food.clone());
+        self.queue.push_back(food);
     }
 }
 impl Display for AntGrid {
