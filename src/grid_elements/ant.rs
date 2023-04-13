@@ -39,7 +39,7 @@ impl GridElement for Ant {
         return true;
     }
 
-    fn decide(&mut self, grid: &AntGrid) -> Option<Coord> {
+    fn decide(&mut self, grid: &mut AntGrid) -> Option<Coord> {
         match self.state {
             State::Wandering => Some(self.wander(grid)),
             State::Food => Some(self.find_food(grid)),

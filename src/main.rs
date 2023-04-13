@@ -5,7 +5,7 @@ mod grid_elements;
 mod tui_runner;
 
 fn main() {
-    let num_ants = 10;
+    let num_ants = 0;
     let num_food = 1;
     let cols = 20;
     let rows = cols;

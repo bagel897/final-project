@@ -7,6 +7,7 @@ use crate::{
         empty::Empty,
         food::Food,
         grid_element::GridElement,
+        hive::Hive,
     },
 };
 use std::{
@@ -86,6 +87,7 @@ impl AntGrid {
     pub fn run_round(&mut self) {
         self.run_decide();
     }
+
     pub fn attack(&self, coord: &Coord, team: &Team) {
         assert!(self.is_enemy(coord, team));
         let ant = self.grid.get(coord).unwrap();
@@ -107,13 +109,18 @@ impl AntGrid {
         };
     }
     pub fn put_ant(&mut self, pos: Coord, team: &Team) {
+        self.put(pos, Rc::new(RefCell::new(Ant::new(&pos, team))));
+    }
+    pub fn put_hive(&mut self, pos: Coord, team: Team) {
+        self.put(pos, Rc::new(RefCell::new(Hive::new(pos, team))));
+    }
+    fn put(&mut self, pos: Coord, elem: Rc<RefCell<dyn GridElement>>) {
         assert!(self.does_exist(&pos));
         if self.is_blocked(&pos) {
             return;
         }
-        let ant = Rc::new(RefCell::new(Ant::new(&pos, team)));
-        self.grid.insert(pos, ant.clone());
-        self.ant_queue.push_back(ant);
+        self.grid.insert(pos, elem.clone());
+        self.ant_queue.push_back(elem);
     }
     pub fn put_food(&mut self, pos: Coord) {
         assert!(self.does_exist(&pos));

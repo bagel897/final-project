@@ -16,7 +16,7 @@ impl GridElement for Food {
     fn exists(&self) -> bool {
         return true;
     }
-    fn decide(&mut self, grid: &crate::ant_grid::AntGrid) -> Option<Coord> {
+    fn decide(&mut self, grid: &mut crate::ant_grid::AntGrid) -> Option<Coord> {
         return Some(self.pos);
     }
 }
