@@ -50,7 +50,17 @@ impl eframe::App for GUIrunner {
                 .set(get_image(&self.runner.grid), TextureOptions::default());
             ui.with_layout(
                 egui::Layout::centered_and_justified(egui::Direction::TopDown),
-                |ui| ui.image(&self.texture, self.texture.size_vec2()),
+                |ui| {
+                    let rect = ui.available_size();
+                    let y = rect.y as usize;
+                    let x = rect.x as usize;
+                    if y != self.rows || x != self.cols {
+                        self.rows = y;
+                        self.cols = x;
+                        self.reset();
+                    }
+                    ui.image(&self.texture, self.texture.size_vec2());
+                },
             );
         });
         ctx.request_repaint();
