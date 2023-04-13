@@ -78,12 +78,18 @@ impl AntGrid {
     }
     pub fn put_ant(&mut self, pos: Coord) {
         assert!(self.does_exist(&pos));
+        if self.is_blocked(&pos) {
+            return;
+        }
         let ant = Rc::new(RefCell::new(Ant::new(&pos)));
         self.grid.insert(pos, ant.clone());
         self.ant_queue.push_back(ant);
     }
     pub fn put_food(&mut self, pos: Coord) {
         assert!(self.does_exist(&pos));
+        if self.is_blocked(&pos) {
+            return;
+        }
         let food = Rc::new(RefCell::new(Food::new(&pos)));
         self.grid.insert(pos, food.clone());
         self.food.push(food);
