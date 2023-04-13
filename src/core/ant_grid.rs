@@ -16,6 +16,9 @@ use std::{
     fmt::Display,
     rc::Rc,
 };
+
+use super::signals::Signal;
+
 pub(crate) struct AntGrid {
     pub grid: HashMap<Coord, Rc<RefCell<dyn GridElement>>>,
     ant_queue: VecDeque<Rc<RefCell<dyn GridElement>>>,
@@ -25,6 +28,8 @@ pub(crate) struct AntGrid {
     pub rows: usize,
     pub cols: usize,
     pub smell: f64,
+    pub starting_food: usize,
+    pub signal_radius: f64,
     rng: rand::rngs::ThreadRng,
 }
 fn empty(pos: &Coord) -> Rc<RefCell<dyn GridElement>> {
@@ -42,6 +47,8 @@ impl AntGrid {
             cols,
             rows,
             smell: 0.5,
+            starting_food: 10,
+            signal_radius: 10.0,
         }
     }
     pub fn does_exist(&self, coord: &Coord) -> bool {
@@ -94,8 +101,19 @@ impl AntGrid {
                 return pt.distance(&f.borrow().pos());
             })
             .min_by(|x, y| x.total_cmp(y))?;
-        self.food_dist.insert(pt.clone(), f);
+        // self.food_dist.insert(pt.clone(), f);
         return Some(self.adjust(f));
+    }
+    pub(super) fn send_signal(&mut self, pt: &Coord, signal: Signal, team: Team) {
+        for i in self
+            .grid
+            .iter()
+            .filter(|entry| pt.distance(entry.0) < self.signal_radius)
+        {
+            if i.1.borrow_mut().team().map_or(false, |t| t == team) {
+                i.1.borrow_mut().recv_signal(signal);
+            }
+        }
     }
     pub fn distance_to_hive(&mut self, pt: &Coord, team: &Team) -> Option<f64> {
         if self.is_blocked(pt) {
@@ -155,13 +173,13 @@ impl AntGrid {
         let empty = empty(&coord);
         let ant = self.grid.get(coord).unwrap_or(&empty);
 
-        return ant.borrow().is_hive() && ant.borrow().team().map_or(false, |t| t != team);
+        return ant.borrow().is_hive() && ant.borrow().team().map_or(false, |t| t == team);
     }
     pub fn put_ant(&mut self, pos: Coord, team: &Team) {
         self.put(pos, Rc::new(RefCell::new(Ant::new(&pos, team))));
     }
     pub fn put_hive(&mut self, pos: Coord, team: Team) {
-        let hive = Rc::new(RefCell::new(Hive::new(pos, team)));
+        let hive = Rc::new(RefCell::new(Hive::new(pos, team, self.starting_food)));
         if self.put(pos, hive.clone()) {
             let id = hive.borrow().team().unwrap().id;
             self.hives

@@ -7,6 +7,7 @@ use strum::IntoEnumIterator;
 use crate::core::{
     ant_grid::AntGrid,
     coord::{Coord, Dir},
+    signals::SignalType,
 };
 
 use super::{ant::Team, grid_element::GridElement};
@@ -15,6 +16,7 @@ pub(crate) struct Hive {
     pos: Coord,
     team: Team,
     health: usize,
+    food: usize,
 }
 impl GridElement for Hive {
     fn pos(&self) -> &Coord {
@@ -38,7 +40,10 @@ impl GridElement for Hive {
             if next.is_some() {
                 let n = next.unwrap();
                 if !grid.is_blocked(&n) {
-                    grid.put_ant(n, &self.team);
+                    if self.food > 0 {
+                        grid.put_ant(n, &self.team);
+                        self.food -= 1;
+                    }
                     break;
                 }
             }
@@ -51,13 +56,20 @@ impl GridElement for Hive {
     fn color(&self) -> Rgb<u8> {
         return self.team.color;
     }
+    fn recv_signal(&mut self, signal: crate::core::signals::Signal) {
+        match signal.signal_type {
+            SignalType::Deliver => self.food += 1,
+            _ => {}
+        };
+    }
 }
 impl Hive {
-    pub fn new(pos: Coord, team: Team) -> Self {
+    pub fn new(pos: Coord, team: Team, food: usize) -> Self {
         Hive {
             pos,
             team,
             health: team.health,
+            food,
         }
     }
 }

@@ -6,7 +6,7 @@ use strum::IntoEnumIterator;
 
 use crate::core::{
     ant_grid::AntGrid,
-    coord::{Coord, Dir},
+    coord::{Coord, Dir}, signals::{Signal, SignalType},
 };
 
 use super::grid_element::GridElement;
@@ -106,6 +106,7 @@ impl Ant {
                 Some(i) => i,
             };
             if grid.is_hive_same_team(&pos, self.team) {
+                grid.send_signal(&pos, Signal { coord: pos, signal_type: SignalType::Deliver, propogate: 0 }, self.team);
                 self.state = State::Food;
                 return self.pos;
             }
