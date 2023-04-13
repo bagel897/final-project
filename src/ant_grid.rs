@@ -10,7 +10,8 @@ use std::{
 };
 pub(crate) struct AntGrid {
     grid: HashMap<Coord, Rc<RefCell<dyn GridElement>>>,
-    queue: VecDeque<Rc<RefCell<dyn GridElement>>>,
+    ant_queue: VecDeque<Rc<RefCell<dyn GridElement>>>,
+    food: Vec<Rc<RefCell<Food>>>,
     rows: usize,
     cols: usize,
 }
@@ -18,7 +19,8 @@ impl AntGrid {
     pub fn new(rows: usize, cols: usize) -> Self {
         AntGrid {
             grid: HashMap::new(),
-            queue: VecDeque::new(),
+            ant_queue: VecDeque::new(),
+            food: Vec::new(),
             cols,
             rows,
         }
@@ -42,15 +44,19 @@ impl AntGrid {
     fn run_decide(&mut self) {
         let mut new_grid = HashMap::new();
         let mut other_queue = VecDeque::new();
-        while !self.queue.is_empty() {
-            let ant = self.queue.pop_front().unwrap();
+        while !self.ant_queue.is_empty() {
+            let ant = self.ant_queue.pop_front().unwrap();
             let c = ant.borrow_mut().decide(self);
             new_grid.insert(c, ant.clone());
             other_queue.push_back(ant);
         }
         while !other_queue.is_empty() {
             let ant = other_queue.pop_front().unwrap();
-            self.queue.push_back(ant);
+            self.ant_queue.push_back(ant);
+        }
+        for f in self.food.iter() {
+            let c = f.borrow_mut().decide(self);
+            new_grid.insert(c, f.clone());
         }
         self.grid = new_grid;
     }
@@ -61,13 +67,13 @@ impl AntGrid {
         assert!(self.does_exist(&pos));
         let ant = Rc::new(RefCell::new(Ant::new(&pos)));
         self.grid.insert(pos, ant.clone());
-        self.queue.push_back(ant);
+        self.ant_queue.push_back(ant);
     }
     pub fn put_food(&mut self, pos: Coord) {
         assert!(self.does_exist(&pos));
         let food = Rc::new(RefCell::new(Food::new(&pos)));
         self.grid.insert(pos, food.clone());
-        self.queue.push_back(food);
+        self.food.push(food);
     }
 }
 impl Display for AntGrid {
