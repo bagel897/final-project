@@ -11,4 +11,5 @@ pub(crate) trait GridElement: Debug + Display {
     fn team(&self) -> Option<Team> {
         None
     }
+    fn attacked(&mut self, damage: usize) {}
 }

@@ -95,8 +95,11 @@ impl AntGrid {
     pub fn run_round(&mut self) {
         self.run_decide();
     }
-    pub fn attack(&self, coord: &Coord) {
-        todo!();
+    pub fn attack(&self, coord: &Coord, team: &Team) {
+        assert!(self.is_enemy(coord, team));
+        let ant = self.grid.get(coord).unwrap();
+        let mut other_entity = ant.borrow_mut();
+        other_entity.attacked(1);
     }
     pub fn is_enemy(&self, coord: &Coord, team: &Team) -> bool {
         if !self.does_exist(coord) {

@@ -20,6 +20,7 @@ impl Runner {
         self.teams.push(Team {
             color,
             id: self.teams.len(),
+            health: 1,
         });
     }
     pub fn put_teams(&mut self) {

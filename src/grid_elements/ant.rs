@@ -21,6 +21,7 @@ enum State {
 pub(crate) struct Team {
     pub color: Color,
     pub id: usize,
+    pub health: usize,
 }
 #[derive(Debug)]
 pub(crate) struct Ant {
@@ -28,6 +29,7 @@ pub(crate) struct Ant {
     pos: Coord,
     state: State,
     team: Team,
+    health: usize,
 }
 impl GridElement for Ant {
     fn pos(&self) -> &Coord {
@@ -49,6 +51,12 @@ impl GridElement for Ant {
     fn team(&self) -> Option<Team> {
         Some(self.team)
     }
+    fn attacked(&mut self, damage: usize) {
+        match self.health.checked_sub(damage) {
+            None => self.state = State::Dead,
+            Some(i) => self.health = i,
+        }
+    }
 }
 impl Display for Ant {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -69,6 +77,7 @@ impl Ant {
             pos: pos.clone(),
             state: State::Food,
             team: team.clone(),
+            health: team.health,
         };
     }
     pub(self) fn next(&self) -> Option<Coord> {
@@ -79,7 +88,7 @@ impl Ant {
         if next.is_some() {
             let n = next.unwrap();
             if grid.is_enemy(&n, &self.team) {
-                grid.attack(&n);
+                grid.attack(&n, &self.team);
             }
         } else {
             self.state = State::Wandering;
