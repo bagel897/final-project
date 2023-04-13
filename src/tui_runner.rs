@@ -52,10 +52,14 @@ impl Runner {
     pub fn print(&self) {
         println!("{}", self.grid);
     }
-    pub fn run(&mut self, num_rounds: usize, interval: usize) {
+    pub fn run(&mut self, num_rounds: usize, interval: Option<usize>) {
         for i in 0..num_rounds {
             self.grid.run_round();
-            if i % interval == interval - 1 {
+            let int = match interval {
+                None => continue,
+                Some(i) => i,
+            };
+            if i % int == int - 1 {
                 self.print();
             }
         }

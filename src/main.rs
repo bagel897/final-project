@@ -19,7 +19,7 @@ fn run_tui() {
     runner.put_ants(num_ants);
     runner.put_food(num_food);
     runner.print();
-    runner.run(num_rounds, interval);
+    runner.run(num_rounds, Some(interval));
 }
 fn main() {
     run_gui(500, 1000);
