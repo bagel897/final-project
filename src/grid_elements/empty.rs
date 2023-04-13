@@ -8,6 +8,9 @@ pub(crate) struct Empty {
     pos: Coord,
 }
 impl GridElement for Empty {
+    fn pos(&self) -> &Coord {
+        return &self.pos;
+    }
     fn exists(&self) -> bool {
         return false;
     }

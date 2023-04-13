@@ -9,6 +9,9 @@ pub(crate) struct Food {
     pub pos: Coord,
 }
 impl GridElement for Food {
+    fn pos(&self) -> &Coord {
+        return &self.pos;
+    }
     fn exists(&self) -> bool {
         return true;
     }

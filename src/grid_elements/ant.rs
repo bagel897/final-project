@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Display};
+use std::fmt::Display;
 
 use strum::IntoEnumIterator;
 
@@ -22,6 +22,9 @@ pub(crate) struct Ant {
     state: State,
 }
 impl GridElement for Ant {
+    fn pos(&self) -> &Coord {
+        return &self.pos;
+    }
     fn new(pos: &Coord) -> Self {
         return Ant {
             dir: Dir::UP,

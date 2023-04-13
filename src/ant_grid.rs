@@ -1,3 +1,5 @@
+use rand::{distributions::Uniform, Rng};
+
 use crate::{
     coord::Coord,
     grid_elements::{ant::Ant, empty::Empty, food::Food, grid_element::GridElement},
@@ -10,19 +12,23 @@ use std::{
 };
 pub(crate) struct AntGrid {
     grid: HashMap<Coord, Rc<RefCell<dyn GridElement>>>,
+    new_grid: HashMap<Coord, Rc<RefCell<dyn GridElement>>>,
     ant_queue: VecDeque<Rc<RefCell<dyn GridElement>>>,
     food: Vec<Rc<RefCell<Food>>>,
     rows: usize,
     cols: usize,
+    smell: f64,
 }
 impl AntGrid {
     pub fn new(rows: usize, cols: usize) -> Self {
         AntGrid {
             grid: HashMap::new(),
+            new_grid: HashMap::new(),
             ant_queue: VecDeque::new(),
             food: Vec::new(),
             cols,
             rows,
+            smell: 0.5,
         }
     }
     pub fn does_exist(&self, coord: &Coord) -> bool {
@@ -35,20 +41,23 @@ impl AntGrid {
         if !self.does_exist(coord) {
             return true;
         }
-        let get = self.grid.get(coord);
-        // TODO: handle two entering same space
-
+        let mut get = self.grid.get(coord);
+        if get.is_some() && get.unwrap().borrow().exists() {
+            return true;
+        }
+        get = self.new_grid.get(coord);
         return get.map_or(false, |g| {
             return g.borrow().exists();
         });
     }
     fn run_decide(&mut self) {
-        let mut new_grid = HashMap::new();
         let mut other_queue = VecDeque::new();
         while !self.ant_queue.is_empty() {
             let ant = self.ant_queue.pop_front().unwrap();
+            // assert!(!self.is_blocked(ant.borrow().pos()));
             let c = ant.borrow_mut().decide(self);
-            new_grid.insert(c, ant.clone());
+            // assert!(!self.is_blocked(&c));
+            self.new_grid.insert(c, ant.clone());
             other_queue.push_back(ant);
         }
         while !other_queue.is_empty() {
@@ -57,9 +66,17 @@ impl AntGrid {
         }
         for f in self.food.iter() {
             let c = f.borrow_mut().decide(self);
-            new_grid.insert(c, f.clone());
+            self.new_grid.insert(c, f.clone());
         }
-        self.grid = new_grid;
+        self.grid = self.new_grid.clone();
+        self.new_grid = HashMap::new();
+    }
+    fn adjust(&self, distance: f64) -> f64 {
+        let mut rng = rand::thread_rng();
+        let top = 1.0 + self.smell;
+        let bot = 1.0 - self.smell;
+        let rand = rng.sample(Uniform::new(bot, top));
+        return rand * distance;
     }
     pub fn distance_to_food(&self, pt: &Coord) -> Option<f64> {
         if self.is_blocked(pt) {
@@ -69,7 +86,7 @@ impl AntGrid {
             .food
             .iter()
             .map(|f| -> f64 {
-                return pt.distance(&f.borrow().pos);
+                return self.adjust(pt.distance(&f.borrow().pos()));
             })
             .min_by(|x, y| x.total_cmp(y));
     }
