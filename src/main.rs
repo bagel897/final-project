@@ -6,9 +6,9 @@ mod tui_runner;
 
 fn main() {
     let num_ants = 0;
-    let num_food = 1;
-    let cols = 20;
-    let rows = cols;
+    let num_food = 4;
+    let cols = 40;
+    let rows = 20;
     let num_rounds = 100;
     let interval = 5;
     let mut runner = Runner::new(rows, cols);

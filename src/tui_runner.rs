@@ -9,7 +9,7 @@ pub(crate) struct Runner {
     teams: Vec<Team>,
 }
 impl Runner {
-    pub fn new(cols: usize, rows: usize) -> Self {
+    pub fn new(rows: usize, cols: usize) -> Self {
         Runner {
             grid: AntGrid::new(rows, cols),
             rng: thread_rng(),
