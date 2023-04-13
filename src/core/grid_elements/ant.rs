@@ -97,7 +97,7 @@ impl Ant {
     pub(self) fn next(&self) -> Option<Coord> {
         return self.pos.next_cell(&self.dir);
     }
-    fn carry(&mut self, grid: &AntGrid) -> Coord {
+    fn carry(&mut self, grid: &mut AntGrid) -> Coord {
         let mut min_val = f64::MAX;
         let mut min_cell = Option::None;
         for dir in Dir::iter() {
@@ -146,7 +146,7 @@ impl Ant {
         }
         return false;
     }
-    fn find_food(&mut self, grid: &AntGrid) -> Coord {
+    fn find_food(&mut self, grid: &mut AntGrid) -> Coord {
         let mut min_val = f64::MAX;
         let mut min_cell = Option::None;
         for dir in Dir::iter() {
@@ -174,7 +174,7 @@ impl Ant {
         self.pos = min_cell.unwrap_or(self.pos);
         return self.pos;
     }
-    fn get_dist(&self, pos: &Coord, grid: &AntGrid) -> Option<f64> {
+    fn get_dist(&self, pos: &Coord, grid: &mut AntGrid) -> Option<f64> {
         let res = match self.state {
             State::Food => grid.distance_to_food(&pos)?,
             State::Carrying => grid.distance_to_hive(&pos, &self.team)?,

@@ -1,4 +1,4 @@
-use rand::{distributions::Uniform, Rng};
+use rand::{distributions::Uniform, thread_rng, Rng};
 
 use crate::core::{
     coord::Coord,
@@ -21,9 +21,11 @@ pub(crate) struct AntGrid {
     ant_queue: VecDeque<Rc<RefCell<dyn GridElement>>>,
     food: Vec<Rc<RefCell<Food>>>,
     hives: HashMap<usize, Vec<Rc<RefCell<Hive>>>>,
+    food_dist: HashMap<Coord, f64>,
     pub rows: usize,
     pub cols: usize,
     pub smell: f64,
+    rng: rand::rngs::ThreadRng,
 }
 fn empty(pos: &Coord) -> Rc<RefCell<dyn GridElement>> {
     Rc::new(RefCell::new(Empty::new(pos)))
@@ -35,6 +37,8 @@ impl AntGrid {
             ant_queue: VecDeque::new(),
             food: Vec::new(),
             hives: HashMap::new(),
+            food_dist: HashMap::new(),
+            rng: thread_rng(),
             cols,
             rows,
             smell: 0.5,
@@ -70,38 +74,45 @@ impl AntGrid {
         }
         self.ant_queue = other_queue;
     }
-    fn adjust(&self, distance: f64) -> f64 {
-        let mut rng = rand::thread_rng();
+    fn adjust(&mut self, distance: f64) -> f64 {
         let top = 1.0 + self.smell;
         let bot = 1.0 - self.smell;
-        let rand = rng.sample(Uniform::new(bot, top));
+        let rand = self.rng.sample(Uniform::new(bot, top));
         return rand * distance;
     }
-    pub fn distance_to_food(&self, pt: &Coord) -> Option<f64> {
+    pub fn distance_to_food(&mut self, pt: &Coord) -> Option<f64> {
         if self.is_blocked(pt) {
             return None;
         }
-        return self
+        if self.food_dist.contains_key(pt) {
+            return Some(self.adjust(self.food_dist.get(pt)?.clone()));
+        }
+        let f = self
             .food
             .iter()
             .map(|f| -> f64 {
-                return self.adjust(pt.distance(&f.borrow().pos()));
+                return pt.distance(&f.borrow().pos());
             })
-            .min_by(|x, y| x.total_cmp(y));
+            .min_by(|x, y| x.total_cmp(y))?;
+        self.food_dist.insert(pt.clone(), f);
+        return Some(self.adjust(f));
     }
-    pub fn distance_to_hive(&self, pt: &Coord, team: &Team) -> Option<f64> {
+    pub fn distance_to_hive(&mut self, pt: &Coord, team: &Team) -> Option<f64> {
         if self.is_blocked(pt) {
             return None;
         }
         match self.hives.get(&team.id) {
             None => None,
 
-            Some(i) => i
-                .iter()
-                .map(|f| -> f64 {
-                    return pt.distance(&f.borrow().pos());
-                })
-                .min_by(|x, y| x.total_cmp(y)),
+            Some(i) => Some(
+                self.adjust(
+                    i.iter()
+                        .map(|f| -> f64 {
+                            return pt.distance(&f.borrow().pos());
+                        })
+                        .min_by(|x, y| x.total_cmp(y))?,
+                ),
+            ),
         }
     }
     pub fn run_round(&mut self) {
@@ -172,6 +183,7 @@ impl AntGrid {
         let food = Rc::new(RefCell::new(Food::new(&pos)));
         if self.put(pos, food.clone()) {
             self.food.push(food);
+            self.food_dist.clear();
         }
     }
 }
