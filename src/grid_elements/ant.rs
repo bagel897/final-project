@@ -89,10 +89,11 @@ impl Ant {
             let n = next.unwrap();
             if grid.is_enemy(&n, &self.team) {
                 grid.attack(&n, &self.team);
+                return self.pos;
             }
-        } else {
-            self.state = State::Wandering;
         }
+        self.state = State::Wandering;
+
         return self.pos;
     }
     fn should_battle(&mut self, grid: &AntGrid, dir: Dir) -> bool {
