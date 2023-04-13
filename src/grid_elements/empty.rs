@@ -14,7 +14,7 @@ impl GridElement for Empty {
     fn exists(&self) -> bool {
         return false;
     }
-    fn decide(&mut self, grid: &mut crate::ant_grid::AntGrid) -> Option<Coord> {
+    fn decide(&mut self, _grid: &mut crate::ant_grid::AntGrid) -> Option<Coord> {
         return None;
     }
 }

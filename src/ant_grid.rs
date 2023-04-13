@@ -128,7 +128,7 @@ impl AntGrid {
             Some(t) => &t != team,
         };
     }
-    pub fn is_food(&self, coord: &Coord, team: &Team) -> bool {
+    pub fn is_food(&self, coord: &Coord) -> bool {
         if !self.does_exist(coord) {
             return false;
         }

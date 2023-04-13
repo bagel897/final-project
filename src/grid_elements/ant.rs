@@ -139,7 +139,7 @@ impl Ant {
             if self.should_battle(grid, dir) {
                 return self.pos;
             }
-            if grid.is_food(&pos, &self.team) {
+            if grid.is_food(&pos) {
                 self.state = State::Carrying;
                 return self.pos;
             }
