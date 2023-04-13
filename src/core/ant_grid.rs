@@ -1,6 +1,6 @@
 use rand::{distributions::Uniform, Rng};
 
-use crate::{
+use crate::core::{
     coord::Coord,
     grid_elements::{
         ant::{Ant, Team},

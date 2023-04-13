@@ -1,7 +1,7 @@
 use image::Rgb;
 use rand::{seq::IteratorRandom, thread_rng, Rng};
 
-use crate::{ant_grid::AntGrid, coord::Coord, grid_elements::ant::Team};
+use crate::core::{ant_grid::AntGrid, coord::Coord, grid_elements::ant::Team};
 
 pub(crate) struct Runner {
     pub grid: AntGrid,

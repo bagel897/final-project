@@ -4,7 +4,10 @@ use colored::{Color, Colorize};
 use image::Rgb;
 use strum::IntoEnumIterator;
 
-use crate::coord::{Coord, Dir};
+use crate::core::{
+    ant_grid::AntGrid,
+    coord::{Coord, Dir},
+};
 
 use super::{ant::Team, grid_element::GridElement};
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -26,7 +29,7 @@ impl GridElement for Hive {
     fn attacked(&mut self, damage: usize) {
         self.health = self.health.checked_sub(damage).unwrap_or(0);
     }
-    fn decide(&mut self, grid: &mut crate::ant_grid::AntGrid) -> Option<Coord> {
+    fn decide(&mut self, grid: &mut AntGrid) -> Option<Coord> {
         if self.health == 0 {
             return None;
         }

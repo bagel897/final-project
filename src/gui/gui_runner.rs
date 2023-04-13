@@ -1,5 +1,4 @@
-use crate::ant_grid::AntGrid;
-use crate::tui_runner::Runner;
+use crate::core::runner::Runner;
 use egui::{TextureHandle, TextureOptions};
 
 use super::image_utils::get_image;

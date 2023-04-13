@@ -4,7 +4,7 @@ use colored::{Color, Colorize};
 use image::Rgb;
 use strum::IntoEnumIterator;
 
-use crate::{
+use crate::core::{
     ant_grid::AntGrid,
     coord::{Coord, Dir},
 };
