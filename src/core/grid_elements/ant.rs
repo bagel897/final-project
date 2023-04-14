@@ -133,9 +133,6 @@ impl Ant {
                 if !process {
                     return;
                 }
-                if i.coord.distance(&self.pos) <= 1.1 {
-                    return;
-                }
                 self.targeted = Some(Targeted {
                     prev_state: old_state,
                     coord: i.coord,
