@@ -4,6 +4,6 @@ mod core;
 mod gui;
 mod tui;
 
-fn main() {
-    run_gui(500, 1000);
+fn main() -> Result<(), eframe::Error> {
+    return run_gui(500, 1000);
 }

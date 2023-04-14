@@ -122,7 +122,15 @@ impl Ant {
             None => return,
             Some(i) => {
                 let old_state = self.state;
-                if old_state == State::Targeted || old_state == State::Carrying {
+                let process = match i.signal_type {
+                    SignalType::Carry => old_state == State::Carrying,
+                    SignalType::Food => old_state == State::Food,
+                    SignalType::Battle => {
+                        old_state != State::Carrying && old_state != State::Targeted
+                    }
+                    _ => false,
+                } && old_state != State::Dead;
+                if !process {
                     return;
                 }
                 self.targeted = Some(Targeted {
@@ -190,15 +198,7 @@ impl Ant {
                     },
                     self.team,
                 );
-                grid.send_signal(
-                    &pos,
-                    Signal {
-                        coord: pos,
-                        signal_type: SignalType::Carry,
-                        propogate: 0,
-                    },
-                    self.team,
-                );
+                self.send_carry(grid, pos);
                 self.state = State::Food;
                 return self.pos;
             }
@@ -213,6 +213,18 @@ impl Ant {
         }
         self.pos = min_cell.unwrap_or(self.pos);
         return self.pos;
+    }
+
+    fn send_carry(&mut self, grid: &mut AntGrid, pos: Coord) {
+        grid.send_signal(
+            &pos,
+            Signal {
+                coord: pos,
+                signal_type: SignalType::Carry,
+                propogate: 1,
+            },
+            self.team,
+        );
     }
     fn battle(&mut self, grid: &mut AntGrid) -> Coord {
         let mut min_val = f64::MAX;
@@ -280,15 +292,7 @@ impl Ant {
                 return self.pos;
             }
             if grid.is_food(&pos) {
-                grid.send_signal(
-                    &pos,
-                    Signal {
-                        coord: pos,
-                        signal_type: SignalType::Food,
-                        propogate: 0,
-                    },
-                    self.team,
-                );
+                self.send_food_signal(grid, pos);
                 self.state = State::Carrying;
                 return self.pos;
             }
@@ -304,6 +308,18 @@ impl Ant {
         }
         self.pos = min_cell.unwrap_or(self.pos);
         return self.pos;
+    }
+
+    fn send_food_signal(&mut self, grid: &mut AntGrid, pos: Coord) {
+        grid.send_signal(
+            &pos,
+            Signal {
+                coord: pos,
+                signal_type: SignalType::Food,
+                propogate: 1,
+            },
+            self.team,
+        );
     }
     fn get_dist(&self, pos: &Coord, grid: &mut AntGrid) -> Option<f64> {
         let res = match self.state {
