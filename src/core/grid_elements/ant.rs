@@ -11,14 +11,21 @@ use crate::core::{
 };
 
 use super::grid_element::GridElement;
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum State {
     Wandering,
     Food,
     Battle,
     Carrying,
     Dead,
+    Targeted,
 }
+#[derive(Debug, Clone, Copy)]
+struct Targeted {
+    prev_state: State,
+    coord: Coord,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Team {
     pub color: Rgb<u8>,
@@ -42,6 +49,7 @@ pub(crate) struct Ant {
     team: Team,
     health: usize,
     signals: VecDeque<Signal>,
+    targeted: Option<Targeted>,
 }
 impl GridElement for Ant {
     fn pos(&self) -> &Coord {
@@ -59,6 +67,7 @@ impl GridElement for Ant {
             State::Battle => Some(self.battle(grid)),
             State::Carrying => Some(self.carry(grid)),
             State::Dead => None,
+            State::Targeted => Some(self.target(grid)),
         };
         self.cleanup(grid);
         res
@@ -75,6 +84,9 @@ impl GridElement for Ant {
     fn color(&self) -> Rgb<u8> {
         return self.team.color;
     }
+    fn recv_signal(&mut self, signal: Signal) {
+        self.signals.push_back(signal);
+    }
 }
 impl Display for Ant {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -84,6 +96,7 @@ impl Display for Ant {
             State::Food => "s",
             State::Battle => "b",
             State::Dead => "d",
+            State::Targeted => "t",
         };
         let color: Color = self.team.into();
         write!(f, "{}", state.color(color))
@@ -98,12 +111,28 @@ impl Ant {
             team: team.clone(),
             health: team.health,
             signals: VecDeque::new(),
+            targeted: None,
         };
     }
     pub(self) fn next(&self) -> Option<Coord> {
         return self.pos.next_cell(&self.dir);
     }
-    fn init(&mut self) {}
+    fn init(&mut self) {
+        match self.signals.front() {
+            None => return,
+            Some(i) => {
+                let old_state = self.state;
+                if old_state == State::Targeted || old_state == State::Carrying {
+                    return;
+                }
+                self.targeted = Some(Targeted {
+                    prev_state: old_state,
+                    coord: i.coord,
+                });
+                self.state = State::Targeted;
+            }
+        };
+    }
     fn cleanup(&mut self, grid: &mut AntGrid) {
         for signal in self.signals.iter() {
             if signal.propogate != 0 {
@@ -113,6 +142,35 @@ impl Ant {
             }
         }
         self.signals.clear();
+    }
+    fn target(&mut self, grid: &mut AntGrid) -> Coord {
+        let mut min_val = f64::MAX;
+        let mut min_cell = Option::None;
+        assert!(self.targeted.is_some());
+        let target = self.targeted.unwrap();
+        for dir in Dir::iter() {
+            let pos = match self.pos.next_cell(&dir) {
+                None => continue,
+                Some(i) => i,
+            };
+            if pos == target.coord {
+                self.state = target.prev_state;
+                self.targeted = None;
+                return self.pos;
+            }
+            let min = match self.get_dist(&pos, grid) {
+                None => continue,
+                Some(i) => i,
+            };
+            if min < min_val && !grid.is_blocked(&pos) {
+                min_val = min;
+                min_cell = Some(pos);
+            }
+        }
+        self.pos = min_cell.unwrap_or(self.pos);
+        self.targeted = Some(target);
+        assert!(self.targeted.is_some());
+        return self.pos;
     }
     fn carry(&mut self, grid: &mut AntGrid) -> Coord {
         let mut min_val = f64::MAX;
@@ -252,6 +310,7 @@ impl Ant {
             State::Food => grid.distance_to_food(&pos)?,
             State::Carrying => grid.distance_to_hive(&pos, &self.team)?,
             State::Battle => grid.distance_to_enemy(&pos, &self.team)?,
+            State::Targeted => self.targeted?.coord.distance(pos),
             _ => return None,
         };
         return Some(res);
