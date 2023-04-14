@@ -157,25 +157,37 @@ impl Ant {
         return self.pos;
     }
     fn battle(&mut self, grid: &mut AntGrid) -> Coord {
-        let next = self.next();
-        if next.is_some() {
-            let n = next.unwrap();
-            if grid.is_enemy(&n, &self.team) {
+        let mut min_val = f64::MAX;
+        let mut min_cell = Option::None;
+        for dir in Dir::iter() {
+            let pos = match self.pos.next_cell(&dir) {
+                None => continue,
+                Some(i) => i,
+            };
+            if grid.is_enemy(&pos, &self.team) {
+
                 grid.send_signal(
-                    &n,
+                    &pos,
                     Signal {
-                        coord: n,
+                        coord: pos,
                         signal_type: SignalType::Battle,
                         propogate: 0,
                     },
                     self.team,
                 );
-                grid.attack(&n, &self.team);
+                grid.attack(&pos, &self.team);
                 return self.pos;
             }
+            let min = match self.get_dist(&pos, grid) {
+                None => continue,
+                Some(i) => i,
+            };
+            if min < min_val && !grid.is_blocked(&pos) {
+                min_val = min;
+                min_cell = Some(pos);
+            }
         }
-        self.state = State::Wandering;
-
+        self.pos = min_cell.unwrap_or(self.pos);
         return self.pos;
     }
     fn should_battle(&mut self, grid: &mut AntGrid, dir: Dir) -> bool {
@@ -240,6 +252,7 @@ impl Ant {
         let res = match self.state {
             State::Food => grid.distance_to_food(&pos)?,
             State::Carrying => grid.distance_to_hive(&pos, &self.team)?,
+            State::Battle => grid.distance_to_enemy(&pos, &self.team)?,
             _ => return None,
         };
         return Some(res);

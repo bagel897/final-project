@@ -118,6 +118,20 @@ impl AntGrid {
             }
         }
     }
+    pub fn distance_to_enemy(&mut self, pt: &Coord, team: &Team) -> Option<f64> {
+
+        if self.is_blocked(pt) {
+            return None;
+        }
+        Some(self.adjust(
+            self.ant_queue.iter().filter(|f| f.try_borrow().map_or(false, |f| f.team().map_or(false,|g| g == *team)))
+                .map(|f| -> f64 {
+                    return pt.distance(&f.borrow().pos());
+                })
+                .min_by(|x, y| x.total_cmp(y))?,
+        ))
+
+    }
     pub fn distance_to_hive(&mut self, pt: &Coord, team: &Team) -> Option<f64> {
         if self.is_blocked(pt) {
             return None;
