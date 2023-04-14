@@ -165,7 +165,6 @@ impl Ant {
                 Some(i) => i,
             };
             if grid.is_enemy(&pos, &self.team) {
-
                 grid.send_signal(
                     &pos,
                     Signal {
