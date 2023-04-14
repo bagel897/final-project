@@ -101,7 +101,7 @@ impl AntGrid {
                 return pt.distance(&f.borrow().pos());
             })
             .min_by(|x, y| x.total_cmp(y))?;
-        // self.food_dist.insert(pt.clone(), f);
+        self.food_dist.insert(pt.clone(), f);
         return Some(self.adjust(f));
     }
     pub(super) fn send_signal(&mut self, pt: &Coord, signal: Signal, team: Team) {
