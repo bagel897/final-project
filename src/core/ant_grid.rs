@@ -110,6 +110,9 @@ impl AntGrid {
             .iter()
             .filter(|entry| pt.distance(entry.0) < self.signal_radius)
         {
+            if i.1.try_borrow().is_err() {
+                continue;
+            }
             if i.1.borrow_mut().team().map_or(false, |t| t == team) {
                 i.1.borrow_mut().recv_signal(signal);
             }
