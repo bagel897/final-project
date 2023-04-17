@@ -8,7 +8,7 @@ use crate::core::{ant_grid::AntGrid, coord::Coord, grid_elements::ant::Team};
 pub(crate) struct Runner {
     pub grid: AntGrid,
     rng: rand::rngs::ThreadRng,
-    teams: Vec<Team>,
+    pub(crate) teams: Vec<Team>,
 }
 impl Runner {
     pub fn new(rows: usize, cols: usize) -> Self {
@@ -23,20 +23,21 @@ impl Runner {
         let y = self.rng.gen_range(0..self.grid.rows);
         Coord { x, y }
     }
-    fn put_team(&mut self, color: Rgb<u8>) {
+    fn put_team(&mut self, color: Rgb<u8>, name: &'static str) {
         let team = Team {
             color,
             id: self.teams.len(),
             health: 1,
+            name,
         };
         self.teams.push(team);
         let rand = self.rand_coord();
         self.grid.put_hive(rand, team);
     }
     pub fn put_teams(&mut self) {
-        self.put_team(Rgb([255, 0, 0]));
-        self.put_team(Rgb([255, 0, 255]));
-        self.put_team(Rgb([255, 255, 0]));
+        self.put_team(Rgb([255, 0, 0]), "Red");
+        self.put_team(Rgb([255, 0, 255]), "Purple");
+        self.put_team(Rgb([255, 255, 0]), "Yellow");
     }
     pub fn put_ants(&mut self, num_ants: usize) {
         for _ in 0..num_ants {

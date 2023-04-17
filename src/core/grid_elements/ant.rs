@@ -31,6 +31,7 @@ pub(crate) struct Team {
     pub color: Rgb<u8>,
     pub id: usize,
     pub health: usize,
+    pub name: &'static str,
 }
 impl Into<Color> for Team {
     fn into(self) -> Color {
