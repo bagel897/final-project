@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use crate::core::{Coord, Runner, Team};
-use egui::{Frame, Image, Pos2, TextureHandle, TextureOptions};
+use egui::{Frame, Image, Pos2, TextureHandle, TextureOptions, Vec2};
 
 #[derive(PartialEq)]
 enum SelectionMode {
@@ -66,14 +66,37 @@ impl<'a> GUIrunner<'a> {
     fn timer_reset(&mut self) {
         self.timer = Timer::new();
     }
-    fn add(&mut self, rect: Pos2) {
+    fn add(&mut self, rect: Pos2, drag: Vec2) {
         let y = rect.y as usize;
         let x = rect.x as usize;
         let c = Coord { x, y };
         match self.selection_mode {
             SelectionMode::HIVE => todo!(),
             SelectionMode::FOOD => self.runner.grid.put_food(c),
-            SelectionMode::DIRT => self.runner.grid.put_dirt(c),
+            SelectionMode::DIRT => {
+                self.runner.grid.put_dirt(c);
+                // let mut bounds = [0, drag.x.round() as u32];
+                // bounds.sort();
+                // println!("{:?}", bounds);
+                // for drag_x in bounds[0] - 1..bounds[1] + 1 {
+                //     println!("drag_x{:?}", drag_x);
+                //     let unround_y_floor = ((drag_x - 1) as f32 / drag.x) * drag.y;
+                //     let unround_y_ceil = ((drag_x + 1) as f32 / drag.x) * drag.y;
+                //     let mut bounds = [
+                //         unround_y_floor.round() as usize,
+                //         unround_y_ceil.round() as usize,
+                //     ];
+                //     bounds.sort();
+                //     println!("{:?}", bounds);
+                //     for drag_y in bounds[0]..bounds[1] {
+                //         let c = Coord {
+                //             x: (drag_x + x as u32) as usize,
+                //             y: drag_y + y,
+                //         };
+                //         self.runner.grid.put_dirt(c);
+                //     }
+                // }
+            }
         }
     }
 }
@@ -100,7 +123,13 @@ impl<'a> eframe::App for GUIrunner<'a> {
             }
             ui.radio_value(&mut self.selection_mode, SelectionMode::FOOD, "Add Food");
             ui.radio_value(&mut self.selection_mode, SelectionMode::DIRT, "Add Dirt");
-            ui.radio_value(&mut self.selection_mode, SelectionMode::HIVE, "Add Hive");
+            for team in self.runner.teams.iter() {
+                ui.radio_value(
+                    &mut self.selection_mode,
+                    SelectionMode::HIVE,
+                    format!("Add Hive {:?}", team.name),
+                );
+            }
 
             ui.add(egui::Label::new(format!(
                 "Rounds Per Second: {}",
@@ -125,10 +154,12 @@ impl<'a> eframe::App for GUIrunner<'a> {
                     self.cols = x;
                     self.reset();
                 }
-                let image =
-                    Image::new(&self.texture, self.texture.size_vec2()).sense(egui::Sense::click());
+                let image = Image::new(&self.texture, self.texture.size_vec2())
+                    .sense(egui::Sense::click_and_drag());
                 let response = ui.add(image);
-                response.interact_pointer_pos().map(|p| self.add(p));
+                response
+                    .interact_pointer_pos()
+                    .map(|p| self.add(p, response.drag_delta()));
             });
         ctx.request_repaint();
     }
