@@ -211,7 +211,7 @@ impl AntGrid {
         }
     }
     fn put(&mut self, pos: Coord, elem: Rc<RefCell<dyn GridElement>>) -> bool {
-        if (!self.does_exist(&pos)) {
+        if !self.does_exist(&pos) {
             return false;
         }
         if self.is_blocked(&pos) {

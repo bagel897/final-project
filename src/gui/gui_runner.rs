@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use crate::core::{Coord, Runner, Team};
-use egui::{Frame, Image, ImageButton, Pos2, TextureHandle, TextureOptions};
+use egui::{Frame, Image, Pos2, TextureHandle, TextureOptions};
 
 #[derive(PartialEq)]
 enum SelectionMode {

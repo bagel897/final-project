@@ -1,18 +1,17 @@
 use crate::core::AntGrid;
 use egui::ColorImage;
-use image::{DynamicImage, GenericImage, Pixel};
-fn grid_to_img(grid: &AntGrid) -> DynamicImage {
-    let mut img = DynamicImage::new_rgb8(grid.cols as u32, grid.rows as u32);
+use image::Pixel;
+
+pub(crate) fn get_image(grid: &AntGrid) -> ColorImage {
+    const COLORS: usize = 4;
+    let mut image_buffer: Vec<u8> = vec![0; grid.rows * grid.cols * COLORS];
     for elem in grid.grid.iter() {
         let color = elem.1.borrow().color().to_rgba();
-        img.put_pixel(elem.0.x as u32, elem.0.y as u32, color);
+        let idx = COLORS * (elem.0.x + elem.0.y * grid.cols);
+        for i in 0..COLORS {
+            image_buffer[idx + i] = color[i];
+        }
     }
-    return img;
-}
-pub(crate) fn get_image(grid: &AntGrid) -> ColorImage {
-    let image = grid_to_img(grid);
-    let size = [image.width() as _, image.height() as _];
-    let image_buffer = image.to_rgba8();
-    let pixels = image_buffer.as_flat_samples();
-    return ColorImage::from_rgba_unmultiplied(size, pixels.as_slice());
+    let size = [grid.cols as _, grid.rows as _];
+    return ColorImage::from_rgba_unmultiplied(size, image_buffer.as_slice());
 }
