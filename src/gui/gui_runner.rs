@@ -83,8 +83,7 @@ impl eframe::App for GUIrunner {
                 self.timer.fps()
             )))
         });
-        self.runner.run(self.speed, None);
-        self.timer.tick(self.speed);
+        self.timer.tick(self.runner.run_dynamic(self.speed));
         egui::Window::new("Ant Simulation").show(&ctx, |ui| {
             self.texture
                 .set(get_image(&self.runner.grid), TextureOptions::default());

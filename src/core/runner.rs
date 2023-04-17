@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use image::Rgb;
 use rand::{seq::IteratorRandom, thread_rng, Rng};
 
@@ -63,5 +65,14 @@ impl Runner {
                 self.print();
             }
         }
+    }
+    pub fn run_dynamic(&mut self, num_rounds: usize) -> usize {
+        let start = Instant::now();
+        let mut n = 0;
+        while start.elapsed().as_millis() < (1000.0 / 60.0) as u128 && n < num_rounds {
+            self.grid.run_round();
+            n += 1;
+        }
+        return n;
     }
 }
