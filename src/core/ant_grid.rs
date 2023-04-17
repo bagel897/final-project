@@ -4,6 +4,7 @@ use crate::core::{
     coord::Coord,
     grid_elements::{
         ant::{Ant, Team},
+        dirt::Dirt,
         empty::Empty,
         food::Food,
         grid_element::GridElement,
@@ -227,6 +228,10 @@ impl AntGrid {
             self.food.push(food);
             self.food_dist.clear();
         }
+    }
+    pub fn put_dirt(&mut self, pos: Coord) {
+        let dirt = Rc::new(RefCell::new(Dirt::new(&pos)));
+        self.put(pos, dirt);
     }
 }
 impl Display for AntGrid {

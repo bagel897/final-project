@@ -73,7 +73,7 @@ impl<'a> GUIrunner<'a> {
         match self.selection_mode {
             SelectionMode::HIVE => todo!(),
             SelectionMode::FOOD => self.runner.grid.put_food(c),
-            SelectionMode::DIRT => todo!(),
+            SelectionMode::DIRT => self.runner.grid.put_dirt(c),
         }
     }
 }
@@ -115,23 +115,18 @@ impl<'a> eframe::App for GUIrunner<'a> {
             .show(&ctx, |ui| {
                 self.texture
                     .set(get_image(&self.runner.grid), TextureOptions::default());
-                ui.with_layout(
-                    egui::Layout::centered_and_justified(egui::Direction::TopDown),
-                    |ui| {
-                        let rect = ui.available_size();
-                        let y = rect.y as usize;
-                        let x = rect.x as usize;
-                        if y != self.rows || x != self.cols {
-                            self.rows = y;
-                            self.cols = x;
-                            self.reset();
-                        }
-                        let image = Image::new(&self.texture, self.texture.size_vec2())
-                            .sense(egui::Sense::click());
-                        let response = ui.add(image);
-                        response.interact_pointer_pos().map(|p| self.add(p));
-                    },
-                );
+                let rect = ui.available_size();
+                let y = rect.y as usize;
+                let x = rect.x as usize;
+                if y != self.rows || x != self.cols {
+                    self.rows = y;
+                    self.cols = x;
+                    self.reset();
+                }
+                let image =
+                    Image::new(&self.texture, self.texture.size_vec2()).sense(egui::Sense::click());
+                let response = ui.add(image);
+                response.interact_pointer_pos().map(|p| self.add(p));
             });
         ctx.request_repaint();
     }
