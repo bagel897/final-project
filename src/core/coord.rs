@@ -23,7 +23,8 @@ pub(crate) struct Coord {
 }
 impl Coord {
     pub fn distance(&self, other: &Coord) -> f64 {
-        return (((other.x - self.x).pow(2) + (other.y - self.y).pow(2)) as f64).sqrt();
+        return (((other.x.abs_diff(self.x)).pow(2) + (other.y.abs_diff(self.y)).pow(2)) as f64)
+            .sqrt();
     }
     pub fn next_cell(&self, dir: &Dir) -> Option<Coord> {
         match dir {
