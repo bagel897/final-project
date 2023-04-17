@@ -111,6 +111,8 @@ impl<'a> eframe::App for GUIrunner<'a> {
         egui::Window::new("Ant Simulation")
             .collapsible(false)
             .title_bar(false)
+            .movable(false)
+            .constrain(true)
             .frame(Frame::none())
             .show(&ctx, |ui| {
                 self.texture
