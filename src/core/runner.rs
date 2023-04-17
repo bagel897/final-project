@@ -34,7 +34,7 @@ impl Runner {
     pub fn put_teams(&mut self) {
         self.put_team(Rgb([255, 0, 0]));
         self.put_team(Rgb([255, 0, 255]));
-        self.put_team(Rgb([0, 0, 255]));
+        self.put_team(Rgb([255, 255, 0]));
     }
     pub fn put_ants(&mut self, num_ants: usize) {
         for _ in 0..num_ants {

@@ -62,19 +62,26 @@ impl eframe::App for GUIrunner {
         let input = egui::RawInput::default();
         egui::SidePanel::right("Current Round Options").show(&ctx, |ui| {
             if ui
-                .add(egui::Slider::new(&mut self.speed, 1..=100).text("Speed"))
+                .add(egui::Slider::new(&mut self.speed, 1..=100).text("Rounds/frame"))
                 .changed()
             {
                 self.timer_reset();
             }
-            ui.add(egui::Slider::new(&mut self.runner.grid.smell, 0.01..=1.0).text("Smell"));
-            if ui.button("Add food").clicked() {
+            ui.add(egui::Slider::new(&mut self.runner.grid.smell, 0.01..=1.0).text("Smell offset"));
+            ui.add(
+                egui::Slider::new(&mut self.runner.grid.signal_radius, 0.0..=1000.0)
+                    .text("Signal Radius"),
+            );
+            if ui.button("Add food (random)").clicked() {
                 self.runner.put_food(1);
             }
-            if ui.button("reset").clicked() {
+            if ui.button("Reset grid").clicked() {
                 self.reset();
             }
-            ui.add(egui::Label::new(format!("FPS: {}", self.timer.fps())))
+            ui.add(egui::Label::new(format!(
+                "Rounds Per Second: {}",
+                self.timer.fps()
+            )))
         });
         self.runner.run(self.speed, None);
         self.timer.tick(self.speed);
