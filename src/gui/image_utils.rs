@@ -1,4 +1,4 @@
-use crate::core::ant_grid::AntGrid;
+use crate::core::AntGrid;
 use egui::ColorImage;
 use image::{DynamicImage, GenericImage, Pixel};
 fn grid_to_img(grid: &AntGrid) -> DynamicImage {

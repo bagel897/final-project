@@ -1,8 +1,14 @@
 use std::time::Instant;
 
-use crate::core::runner::Runner;
-use egui::{TextureHandle, TextureOptions};
+use crate::core::{Coord, Runner, Team};
+use egui::{Frame, Image, ImageButton, Pos2, TextureHandle, TextureOptions};
 
+#[derive(PartialEq)]
+enum SelectionMode {
+    DIRT,
+    HIVE,
+    FOOD,
+}
 use super::image_utils::get_image;
 struct Timer {
     frames: usize,
@@ -23,15 +29,17 @@ impl Timer {
         return (self.frames as f64) / (time as f64);
     }
 }
-struct GUIrunner {
+struct GUIrunner<'a> {
     runner: Runner,
     texture: TextureHandle,
     speed: usize,
     rows: usize,
     cols: usize,
     timer: Timer,
+    selection_mode: SelectionMode,
+    team: Option<&'a Team>,
 }
-impl GUIrunner {
+impl<'a> GUIrunner<'a> {
     pub fn new(rows: usize, cols: usize, cc: &eframe::CreationContext<'_>) -> Self {
         let mut runner = Runner::new(rows, cols);
         runner.put_teams();
@@ -46,6 +54,8 @@ impl GUIrunner {
             rows,
             cols,
             timer: Timer::new(),
+            selection_mode: SelectionMode::FOOD,
+            team: None,
         }
     }
     fn reset(&mut self) {
@@ -56,8 +66,18 @@ impl GUIrunner {
     fn timer_reset(&mut self) {
         self.timer = Timer::new();
     }
+    fn add(&mut self, rect: Pos2) {
+        let y = rect.y as usize;
+        let x = rect.x as usize;
+        let c = Coord { x, y };
+        match self.selection_mode {
+            SelectionMode::HIVE => todo!(),
+            SelectionMode::FOOD => self.runner.grid.put_food(c),
+            SelectionMode::DIRT => todo!(),
+        }
+    }
 }
-impl eframe::App for GUIrunner {
+impl<'a> eframe::App for GUIrunner<'a> {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         let input = egui::RawInput::default();
         egui::SidePanel::right("Current Round Options").show(&ctx, |ui| {
@@ -78,30 +98,41 @@ impl eframe::App for GUIrunner {
             if ui.button("Reset grid").clicked() {
                 self.reset();
             }
+            ui.radio_value(&mut self.selection_mode, SelectionMode::FOOD, "Add Food");
+            ui.radio_value(&mut self.selection_mode, SelectionMode::DIRT, "Add Dirt");
+            ui.radio_value(&mut self.selection_mode, SelectionMode::HIVE, "Add Hive");
+
             ui.add(egui::Label::new(format!(
                 "Rounds Per Second: {}",
                 self.timer.fps()
             )))
         });
         self.timer.tick(self.runner.run_dynamic(self.speed));
-        egui::Window::new("Ant Simulation").show(&ctx, |ui| {
-            self.texture
-                .set(get_image(&self.runner.grid), TextureOptions::default());
-            ui.with_layout(
-                egui::Layout::centered_and_justified(egui::Direction::TopDown),
-                |ui| {
-                    let rect = ui.available_size();
-                    let y = rect.y as usize;
-                    let x = rect.x as usize;
-                    if y != self.rows || x != self.cols {
-                        self.rows = y;
-                        self.cols = x;
-                        self.reset();
-                    }
-                    ui.image(&self.texture, self.texture.size_vec2());
-                },
-            );
-        });
+        egui::Window::new("Ant Simulation")
+            .collapsible(false)
+            .title_bar(false)
+            .frame(Frame::none())
+            .show(&ctx, |ui| {
+                self.texture
+                    .set(get_image(&self.runner.grid), TextureOptions::default());
+                ui.with_layout(
+                    egui::Layout::centered_and_justified(egui::Direction::TopDown),
+                    |ui| {
+                        let rect = ui.available_size();
+                        let y = rect.y as usize;
+                        let x = rect.x as usize;
+                        if y != self.rows || x != self.cols {
+                            self.rows = y;
+                            self.cols = x;
+                            self.reset();
+                        }
+                        let image = Image::new(&self.texture, self.texture.size_vec2())
+                            .sense(egui::Sense::click());
+                        let response = ui.add(image);
+                        response.interact_pointer_pos().map(|p| self.add(p));
+                    },
+                );
+            });
         ctx.request_repaint();
     }
 }
