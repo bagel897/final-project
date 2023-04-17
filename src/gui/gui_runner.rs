@@ -5,19 +5,22 @@ use egui::{TextureHandle, TextureOptions};
 
 use super::image_utils::get_image;
 struct Timer {
-frames: usize,
+    frames: usize,
     start: Instant,
 }
 impl Timer {
-    fn new() -> Self{
-        Timer { frames: 0, start: Instant::now() }
+    fn new() -> Self {
+        Timer {
+            frames: 0,
+            start: Instant::now(),
+        }
     }
-    fn tick(&mut self,num_frames:usize) {
-self.frames += num_frames;
+    fn tick(&mut self, num_frames: usize) {
+        self.frames += num_frames;
     }
     fn fps(&self) -> f64 {
         let time = self.start.elapsed().as_secs();
-        return (self.frames as f64)/(time as f64);
+        return (self.frames as f64) / (time as f64);
     }
 }
 struct GUIrunner {
@@ -58,8 +61,12 @@ impl eframe::App for GUIrunner {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         let input = egui::RawInput::default();
         egui::SidePanel::right("Current Round Options").show(&ctx, |ui| {
-            if ui.add(egui::Slider::new(&mut self.speed, 1..=100).text("Speed")).changed()
-            {self.timer_reset();}
+            if ui
+                .add(egui::Slider::new(&mut self.speed, 1..=100).text("Speed"))
+                .changed()
+            {
+                self.timer_reset();
+            }
             ui.add(egui::Slider::new(&mut self.runner.grid.smell, 0.01..=1.0).text("Smell"));
             if ui.button("Add food").clicked() {
                 self.runner.put_food(1);
