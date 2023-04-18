@@ -13,7 +13,6 @@ use crate::core::{
 use super::grid_element::GridElement;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum State {
-    Wandering,
     Food,
     Battle,
     Carrying,
@@ -44,7 +43,6 @@ impl Into<Color> for Team {
 }
 #[derive(Debug)]
 pub(crate) struct Ant {
-    dir: Dir,
     pos: Coord,
     state: State,
     team: Team,
@@ -63,12 +61,8 @@ impl GridElement for Ant {
     fn decide(&mut self, grid: &mut AntGrid) -> Option<Coord> {
         self.init();
         let res = match self.state {
-            State::Wandering => Some(self.wander(grid)),
-            State::Food => Some(self.find_food(grid)),
-            State::Battle => Some(self.battle(grid)),
-            State::Carrying => Some(self.carry(grid)),
             State::Dead => None,
-            State::Targeted => Some(self.target(grid)),
+            _ => Some(self.a_star_find(grid)),
         };
         self.cleanup(grid);
         res
@@ -92,7 +86,6 @@ impl GridElement for Ant {
 impl Display for Ant {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let state = match self.state {
-            State::Wandering => "w",
             State::Carrying => "c",
             State::Food => "s",
             State::Battle => "b",
@@ -106,7 +99,6 @@ impl Display for Ant {
 impl Ant {
     pub fn new(pos: &Coord, team: &Team) -> Self {
         return Ant {
-            dir: Dir::UP,
             pos: pos.clone(),
             state: State::Food,
             team: team.clone(),
@@ -114,9 +106,6 @@ impl Ant {
             signals: VecDeque::new(),
             targeted: None,
         };
-    }
-    pub(self) fn next(&self) -> Option<Coord> {
-        return self.pos.next_cell(&self.dir);
     }
     fn init(&mut self) {
         match self.signals.front() {
@@ -152,36 +141,66 @@ impl Ant {
         }
         self.signals.clear();
     }
-    fn target(&mut self, grid: &mut AntGrid) -> Coord {
-        let mut min_val = f64::MAX;
-        let mut min_cell = Option::None;
-        assert!(self.targeted.is_some());
-        let target = self.targeted.unwrap();
-        for dir in Dir::iter() {
-            let pos = match self.pos.next_cell(&dir) {
-                None => continue,
-                Some(i) => i,
-            };
-            if pos == target.coord {
-                self.state = target.prev_state;
-                self.targeted = None;
-                return self.pos;
+    fn run_action(&mut self, pos: Coord, grid: &mut AntGrid) -> bool {
+        match self.state {
+            State::Carrying => {
+                if grid.is_hive_same_team(&pos, self.team) {
+                    grid.send_signal(
+                        &pos,
+                        Signal {
+                            coord: pos,
+                            signal_type: SignalType::Deliver,
+                            propogate: 0,
+                        },
+                        self.team,
+                    );
+                    self.send_carry(grid, pos);
+                    self.state = State::Food;
+                    return true;
+                }
+                return false;
             }
-            let min = match self.get_dist(&pos, grid) {
-                None => continue,
-                Some(i) => i,
-            };
-            if min < min_val && !grid.is_blocked(&pos) {
-                min_val = min;
-                min_cell = Some(pos);
+            State::Food => {
+                if self.should_battle(grid, pos) {
+                    return true;
+                }
+                if grid.is_food(&pos) {
+                    self.send_food_signal(grid, pos);
+                    self.state = State::Carrying;
+                    return true;
+                }
+                return false;
             }
+            State::Battle => {
+                if grid.is_enemy(&pos, &self.team) {
+                    grid.send_signal(
+                        &pos,
+                        Signal {
+                            coord: pos,
+                            signal_type: SignalType::Battle,
+                            propogate: 0,
+                        },
+                        self.team,
+                    );
+                    grid.attack(&pos, &self.team);
+                    return true;
+                }
+                return false;
+            }
+            State::Targeted => {
+                assert!(self.targeted.is_some());
+                let target = self.targeted.unwrap();
+                if pos == target.coord {
+                    self.state = target.prev_state;
+                    self.targeted = None;
+                    return true;
+                }
+                return false;
+            }
+            _ => false,
         }
-        self.pos = min_cell.unwrap_or(self.pos);
-        self.targeted = Some(target);
-        assert!(self.targeted.is_some());
-        return self.pos;
     }
-    fn carry(&mut self, grid: &mut AntGrid) -> Coord {
+    fn a_star_find(&mut self, grid: &mut AntGrid) -> Coord {
         let mut min_val = f64::MAX;
         let mut min_cell = Option::None;
         for dir in Dir::iter() {
@@ -189,18 +208,7 @@ impl Ant {
                 None => continue,
                 Some(i) => i,
             };
-            if grid.is_hive_same_team(&pos, self.team) {
-                grid.send_signal(
-                    &pos,
-                    Signal {
-                        coord: pos,
-                        signal_type: SignalType::Deliver,
-                        propogate: 0,
-                    },
-                    self.team,
-                );
-                self.send_carry(grid, pos);
-                self.state = State::Food;
+            if self.run_action(pos, grid) {
                 return self.pos;
             }
             let min = match self.get_dist(&pos, grid) {
@@ -227,44 +235,7 @@ impl Ant {
             self.team,
         );
     }
-    fn battle(&mut self, grid: &mut AntGrid) -> Coord {
-        let mut min_val = f64::MAX;
-        let mut min_cell = Option::None;
-        for dir in Dir::iter() {
-            let pos = match self.pos.next_cell(&dir) {
-                None => continue,
-                Some(i) => i,
-            };
-            if grid.is_enemy(&pos, &self.team) {
-                grid.send_signal(
-                    &pos,
-                    Signal {
-                        coord: pos,
-                        signal_type: SignalType::Battle,
-                        propogate: 0,
-                    },
-                    self.team,
-                );
-                grid.attack(&pos, &self.team);
-                return self.pos;
-            }
-            let min = match self.get_dist(&pos, grid) {
-                None => continue,
-                Some(i) => i,
-            };
-            if min < min_val && !grid.is_blocked(&pos) {
-                min_val = min;
-                min_cell = Some(pos);
-            }
-        }
-        self.pos = min_cell.unwrap_or(self.pos);
-        return self.pos;
-    }
-    fn should_battle(&mut self, grid: &mut AntGrid, dir: Dir) -> bool {
-        let coord = match self.pos().next_cell(&self.dir) {
-            None => return false,
-            Some(i) => i,
-        };
+    fn should_battle(&mut self, grid: &mut AntGrid, coord: Coord) -> bool {
         if grid.is_enemy(&coord, &self.team) {
             grid.send_signal(
                 &coord,
@@ -275,42 +246,11 @@ impl Ant {
                 },
                 self.team,
             );
-            self.dir = dir.clone();
             self.state = State::Battle;
             return true;
         }
         return false;
     }
-    fn find_food(&mut self, grid: &mut AntGrid) -> Coord {
-        let mut min_val = f64::MAX;
-        let mut min_cell = Option::None;
-        for dir in Dir::iter() {
-            let pos = match self.pos.next_cell(&dir) {
-                None => continue,
-                Some(i) => i,
-            };
-            if self.should_battle(grid, dir) {
-                return self.pos;
-            }
-            if grid.is_food(&pos) {
-                self.send_food_signal(grid, pos);
-                self.state = State::Carrying;
-                return self.pos;
-            }
-            let min = match self.get_dist(&pos, grid) {
-                None => continue,
-                Some(i) => i,
-            };
-
-            if min < min_val && !grid.is_blocked(&pos) {
-                min_val = min;
-                min_cell = Some(pos);
-            }
-        }
-        self.pos = min_cell.unwrap_or(self.pos);
-        return self.pos;
-    }
-
     fn send_food_signal(&mut self, grid: &mut AntGrid, pos: Coord) {
         grid.send_signal(
             &pos,
@@ -331,25 +271,5 @@ impl Ant {
             _ => return None,
         };
         return Some(res);
-    }
-
-    fn wander(&mut self, grid: &mut AntGrid) -> Coord {
-        if self.should_battle(grid, self.dir) {
-            return self.pos;
-        }
-        match self.next() {
-            None => {
-                self.dir = self.dir.turn();
-                return self.pos;
-            }
-            Some(i) => {
-                if grid.is_blocked(&i) {
-                    self.dir = self.dir.turn();
-                    return self.pos;
-                }
-                self.pos = i;
-                return i;
-            }
-        }
     }
 }
