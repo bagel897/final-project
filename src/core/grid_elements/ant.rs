@@ -75,6 +75,9 @@ impl GridElement for Ant {
             None => self.state = State::Dead,
             Some(i) => self.health = i,
         }
+        if self.state == State::Food {
+            self.state = State::Battle;
+        }
     }
     fn color(&self) -> Rgb<u8> {
         return self.team.color;
