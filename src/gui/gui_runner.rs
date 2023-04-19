@@ -1,9 +1,11 @@
 use std::time::Instant;
 
 use crate::core::{Coord, Runner, Team};
+use eframe::Renderer;
 use egui::{Frame, Image, Pos2, TextureHandle, TextureOptions, Vec2};
-
-#[derive(PartialEq)]
+use puffin;
+use puffin_egui;
+#[derive(PartialEq, Eq, Clone, Copy)]
 enum SelectionMode {
     DIRT,
     HIVE,
@@ -29,17 +31,30 @@ impl Timer {
         return (self.frames as f64) / (time as f64);
     }
 }
-struct GUIrunner<'a> {
+#[derive(Clone, Copy, PartialEq, Eq)]
+struct AddMode {
+    team: Option<Team>,
+    selection_mode: SelectionMode,
+}
+const FOOD_MODE: AddMode = AddMode {
+    team: None,
+    selection_mode: SelectionMode::FOOD,
+};
+const DIRT_MODE: AddMode = AddMode {
+    team: None,
+    selection_mode: SelectionMode::DIRT,
+};
+struct GUIrunner {
     runner: Runner,
     texture: TextureHandle,
     speed: usize,
     rows: usize,
     cols: usize,
     timer: Timer,
-    selection_mode: SelectionMode,
-    team: Option<&'a Team>,
+    add_mode: AddMode,
+    profile: bool,
 }
-impl<'a> GUIrunner<'a> {
+impl GUIrunner {
     pub fn new(rows: usize, cols: usize, cc: &eframe::CreationContext<'_>) -> Self {
         let mut runner = Runner::new(rows, cols);
         runner.put_teams();
@@ -50,12 +65,12 @@ impl<'a> GUIrunner<'a> {
         GUIrunner {
             runner,
             texture,
-            speed: 1,
+            speed: 20,
             rows,
             cols,
             timer: Timer::new(),
-            selection_mode: SelectionMode::FOOD,
-            team: None,
+            add_mode: FOOD_MODE,
+            profile: false,
         }
     }
     fn reset(&mut self) {
@@ -70,8 +85,8 @@ impl<'a> GUIrunner<'a> {
         let y = rect.y as usize;
         let x = rect.x as usize;
         let c = Coord { x, y };
-        match self.selection_mode {
-            SelectionMode::HIVE => todo!(),
+        match self.add_mode.selection_mode {
+            SelectionMode::HIVE => self.runner.grid.put_hive(c, self.add_mode.team.unwrap()),
             SelectionMode::FOOD => self.runner.grid.put_food(c),
             SelectionMode::DIRT => {
                 self.runner.grid.put_dirt(c);
@@ -100,8 +115,13 @@ impl<'a> GUIrunner<'a> {
         }
     }
 }
-impl<'a> eframe::App for GUIrunner<'a> {
+impl eframe::App for GUIrunner {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        puffin::profile_function!();
+        puffin::GlobalProfiler::lock().new_frame();
+        if self.profile {
+            puffin_egui::profiler_window(ctx);
+        }
         let input = egui::RawInput::default();
         egui::SidePanel::right("Current Round Options").show(&ctx, |ui| {
             if ui
@@ -121,12 +141,17 @@ impl<'a> eframe::App for GUIrunner<'a> {
             if ui.button("Reset grid").clicked() {
                 self.reset();
             }
-            ui.radio_value(&mut self.selection_mode, SelectionMode::FOOD, "Add Food");
-            ui.radio_value(&mut self.selection_mode, SelectionMode::DIRT, "Add Dirt");
+            ui.checkbox(&mut self.profile, "Show profiler");
+            if ui.button("Profile").clicked() {}
+            ui.radio_value(&mut self.add_mode, FOOD_MODE, "Add Food");
+            ui.radio_value(&mut self.add_mode, DIRT_MODE, "Add Dirt");
             for team in self.runner.teams.iter() {
                 ui.radio_value(
-                    &mut self.selection_mode,
-                    SelectionMode::HIVE,
+                    &mut self.add_mode,
+                    AddMode {
+                        team: Some(team.clone()),
+                        selection_mode: SelectionMode::HIVE,
+                    },
                     format!("Add Hive {:?}", team.name),
                 );
             }
@@ -167,7 +192,8 @@ impl<'a> eframe::App for GUIrunner<'a> {
 pub fn run_gui(rows: usize, cols: usize) -> Result<(), eframe::Error> {
     let mut native_options = eframe::NativeOptions::default();
     native_options.fullscreen = true;
-
+    native_options.renderer = Renderer::Wgpu;
+    puffin::set_scopes_on(true);
     return eframe::run_native(
         "My egui App",
         native_options,
