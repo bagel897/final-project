@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::core::{ant_grid, coord::Coord};
+use crate::core::{AntGrid, Coord};
 
 use super::grid_element::GridElement;
 
@@ -17,7 +17,7 @@ impl GridElement for Food {
     fn exists(&self) -> bool {
         return true;
     }
-    fn decide(&mut self, _grid: &mut ant_grid::AntGrid) -> Option<Coord> {
+    fn decide(&mut self, _grid: &mut AntGrid) -> Option<Coord> {
         return Some(self.pos);
     }
     fn is_food(&self) -> bool {

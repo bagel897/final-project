@@ -2,9 +2,7 @@ use std::fmt::{Debug, Display};
 
 use image::Rgb;
 
-use crate::core::{ant_grid::AntGrid, coord::Coord, signals::Signal};
-
-use super::ant::Team;
+use crate::core::{signals::Signal, AntGrid, Coord, Team};
 
 pub(crate) trait GridElement: Debug + Display {
     fn pos(&self) -> &Coord;

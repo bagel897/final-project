@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use image::Rgb;
 
-use crate::core::{ant_grid, coord::Coord};
+use crate::core::{AntGrid, Coord};
 
 use super::grid_element::GridElement;
 #[derive(Debug)]
@@ -16,7 +16,7 @@ impl GridElement for Empty {
     fn exists(&self) -> bool {
         return false;
     }
-    fn decide(&mut self, _grid: &mut ant_grid::AntGrid) -> Option<Coord> {
+    fn decide(&mut self, _grid: &mut AntGrid) -> Option<Coord> {
         return None;
     }
     fn color(&self) -> Rgb<u8> {

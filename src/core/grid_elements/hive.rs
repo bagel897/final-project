@@ -4,13 +4,9 @@ use colored::{Color, Colorize};
 use image::Rgb;
 use strum::IntoEnumIterator;
 
-use crate::core::{
-    ant_grid::AntGrid,
-    coord::{Coord, Dir},
-    signals::SignalType,
-};
+use crate::core::{signals::SignalType, AntGrid, Coord, Dir, Team};
 
-use super::{ant::Team, grid_element::GridElement};
+use super::grid_element::GridElement;
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) struct Hive {
     pos: Coord,

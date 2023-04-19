@@ -1,7 +1,7 @@
-use super::coord::Coord;
+use super::Coord;
 
 #[derive(Clone, Copy, Debug)]
-pub(crate) enum  SignalType {
+pub(crate) enum SignalType {
     Food,
     Carry,
     Battle,

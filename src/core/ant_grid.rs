@@ -1,15 +1,11 @@
 use rand::{distributions::Uniform, thread_rng, Rng};
 
 use crate::core::{
-    coord::Coord,
+    grid::Grid,
     grid_elements::{
-        ant::{Ant, Team},
-        dirt::Dirt,
-        empty::Empty,
-        food::Food,
-        grid_element::GridElement,
-        hive::Hive,
+        ant::Ant, dirt::Dirt, empty::Empty, food::Food, grid_element::GridElement, hive::Hive,
     },
+    Coord, Team,
 };
 use std::{
     cell::RefCell,
@@ -19,13 +15,11 @@ use std::{
 };
 
 use super::signals::Signal;
-
 pub(crate) struct AntGrid {
-    pub grid: HashMap<Coord, Rc<RefCell<dyn GridElement>>>,
+    pub grid: Grid,
     ant_queue: VecDeque<Rc<RefCell<dyn GridElement>>>,
     food: Vec<Rc<RefCell<Food>>>,
     hives: HashMap<usize, Vec<Rc<RefCell<Hive>>>>,
-    food_dist: HashMap<Coord, f64>,
     pub rows: usize,
     pub cols: usize,
     pub smell: f64,
@@ -39,14 +33,11 @@ fn empty(pos: &Coord) -> Rc<RefCell<dyn GridElement>> {
 impl AntGrid {
     pub fn new(rows: usize, cols: usize) -> Self {
         AntGrid {
-            grid: HashMap::new(),
+            grid: Grid::new(rows, cols),
             ant_queue: VecDeque::new(),
             food: Vec::new(),
             hives: HashMap::new(),
-            food_dist: HashMap::new(),
             rng: thread_rng(),
-            cols,
-            rows,
             smell: 0.5,
             starting_food: 10,
             signal_radius: 10.0,
