@@ -14,21 +14,16 @@ use std::{
     rc::Rc,
 };
 
-use super::signals::Signal;
+use super::{grid::GridIterator, signals::Signal};
 pub(crate) struct AntGrid {
-    pub grid: Grid,
+    grid: Grid,
     ant_queue: VecDeque<Rc<RefCell<dyn GridElement>>>,
     food: Vec<Rc<RefCell<Food>>>,
     hives: HashMap<usize, Vec<Rc<RefCell<Hive>>>>,
-    pub rows: usize,
-    pub cols: usize,
     pub smell: f64,
     pub starting_food: usize,
     pub signal_radius: f64,
     rng: rand::rngs::ThreadRng,
-}
-fn empty(pos: &Coord) -> Rc<RefCell<dyn GridElement>> {
-    Rc::new(RefCell::new(Empty::new(pos)))
 }
 impl AntGrid {
     pub fn new(rows: usize, cols: usize) -> Self {
@@ -43,18 +38,13 @@ impl AntGrid {
             signal_radius: 10.0,
         }
     }
-    pub fn does_exist(&self, coord: &Coord) -> bool {
-        if coord.x >= self.cols || coord.y >= self.rows {
-            return false;
-        }
-        return true;
-    }
+
     pub fn is_blocked(&self, coord: &Coord) -> bool {
-        if !self.does_exist(coord) {
+        if !self.grid.does_exist(coord) {
             return true;
         }
         let get = self.grid.get(coord);
-        return get.map_or(false, |g| {
+        return get.elem.clone().map_or(false, |g| {
             return g.borrow().exists();
         });
     }
@@ -64,11 +54,11 @@ impl AntGrid {
             let ant = self.ant_queue.pop_front().unwrap();
             let old_pos = ant.borrow().pos().clone();
             let c = ant.borrow_mut().decide(self);
-            self.grid.remove(&old_pos);
+            self.grid.get_mut(&old_pos).elem = None;
             if c.is_none() {
                 continue;
             }
-            self.grid.insert(c.unwrap(), ant.clone());
+            self.grid.get_mut(&c.unwrap()).elem = Some(ant.clone());
             other_queue.push_back(ant);
         }
         self.ant_queue = other_queue;
@@ -83,32 +73,18 @@ impl AntGrid {
         if self.is_blocked(pt) {
             return None;
         }
-        if self.food_dist.contains_key(pt) {
-            return Some(self.adjust(self.food_dist.get(pt)?.clone()));
-        }
-        let f = self
-            .food
-            .iter()
-            .map(|f| -> f64 {
-                return pt.distance(&f.borrow().pos());
-            })
-            .min_by(|x, y| x.total_cmp(y))?;
-        self.food_dist.insert(pt.clone(), f);
-        return Some(self.adjust(f));
+        return Some(self.grid.get(pt).pheremones);
     }
     pub(super) fn send_signal(&mut self, pt: &Coord, signal: Signal, team: Team) {
-        for i in self
-            .grid
-            .iter()
-            .filter(|entry| pt.distance(entry.0) < self.signal_radius)
-        {
-            if i.1.try_borrow().is_err() {
-                continue;
-            }
-            if i.1.borrow_mut().team().map_or(false, |t| t == team) {
-                i.1.borrow_mut().recv_signal(signal);
-            }
-        }
+        // todo!();
+        // for i in self.grid.cells_dist(pt, self.signal_radius) {
+        //     if i.try_borrow().is_err() {
+        //         continue;
+        //     }
+        //     if i.borrow_mut().team().map_or(false, |t| t == team) {
+        //         i.borrow_mut().recv_signal(signal);
+        //     }
+        // }
     }
     pub fn distance_to_enemy(&mut self, pt: &Coord, team: &Team) -> Option<f64> {
         if self.is_blocked(pt) {
@@ -153,39 +129,38 @@ impl AntGrid {
 
     pub fn attack(&self, coord: &Coord, team: &Team) {
         assert!(self.is_enemy(coord, team));
-        let ant = self.grid.get(coord).unwrap();
+        let ant = self.grid.get(coord).elem.clone().unwrap();
         let mut other_entity = ant.borrow_mut();
         other_entity.attacked(1);
     }
     pub fn is_enemy(&self, coord: &Coord, team: &Team) -> bool {
-        if !self.does_exist(coord) {
+        if !self.grid.does_exist(coord) {
             return false;
         }
-        let ant = self.grid.get(coord);
-        if ant.is_none() {
-            return false;
-        }
-        let other_team = ant.unwrap().borrow().team();
+        let ant = &self.grid.get(coord).elem;
+
+        let other_team = match ant {
+            None => None,
+            Some(a) => a.borrow().team(),
+        };
         return match other_team {
             None => false,
             Some(t) => &t != team,
         };
     }
     pub fn is_food(&self, coord: &Coord) -> bool {
-        if !self.does_exist(coord) {
+        if !self.grid.does_exist(coord) {
             return false;
         }
-        let empty = empty(&coord);
-        let ant = self.grid.get(coord).unwrap_or(&empty);
+        let ant = self.grid.get(coord).get_elem(&coord);
 
         return ant.borrow().is_food();
     }
     pub fn is_hive_same_team(&self, coord: &Coord, team: Team) -> bool {
-        if !self.does_exist(coord) {
+        if !self.grid.does_exist(coord) {
             return false;
         }
-        let empty = empty(&coord);
-        let ant = self.grid.get(coord).unwrap_or(&empty);
+        let ant = self.grid.get(coord).get_elem(&coord);
 
         return ant.borrow().is_hive() && ant.borrow().team().map_or(false, |t| t == team);
     }
@@ -203,13 +178,13 @@ impl AntGrid {
         }
     }
     fn put(&mut self, pos: Coord, elem: Rc<RefCell<dyn GridElement>>) -> bool {
-        if !self.does_exist(&pos) {
+        if !self.grid.does_exist(&pos) {
             return false;
         }
         if self.is_blocked(&pos) {
             return false;
         }
-        self.grid.insert(pos, elem.clone());
+        self.grid.get_mut(&pos).elem = Some(elem.clone());
         self.ant_queue.push_back(elem);
         return true;
     }
@@ -217,30 +192,25 @@ impl AntGrid {
         let food = Rc::new(RefCell::new(Food::new(&pos)));
         if self.put(pos, food.clone()) {
             self.food.push(food);
-            self.food_dist.clear();
         }
     }
+    pub fn rows(&self) -> usize {
+        return self.grid.rows;
+    }
+    pub fn cols(&self) -> usize {
+        return self.grid.cols;
+    }
+
     pub fn put_dirt(&mut self, pos: Coord) {
         let dirt = Rc::new(RefCell::new(Dirt::new(&pos)));
         self.put(pos, dirt);
     }
+    pub fn iter(&self) -> GridIterator {
+        return self.grid.iter();
+    }
 }
 impl Display for AntGrid {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for i in 0..self.rows {
-            let y = self.rows - i - 1;
-            write!(f, "|")?;
-            for x in 0..self.cols {
-                write!(f, " ")?;
-
-                match self.grid.get(&Coord { x, y }) {
-                    None => Empty::new(&Coord { x, y }).fmt(f),
-                    Some(i) => i.borrow().fmt(f),
-                }?;
-                write!(f, " |")?;
-            }
-            write!(f, "\n")?;
-        }
-        Ok(())
+        write!(f, "{}", self.grid)
     }
 }

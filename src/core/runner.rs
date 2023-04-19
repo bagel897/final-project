@@ -19,8 +19,8 @@ impl Runner {
         }
     }
     fn rand_coord(&mut self) -> Coord {
-        let x = self.rng.gen_range(0..self.grid.cols);
-        let y = self.rng.gen_range(0..self.grid.rows);
+        let x = self.rng.gen_range(0..self.grid.cols());
+        let y = self.rng.gen_range(0..self.grid.rows());
         Coord { x, y }
     }
     fn put_team(&mut self, color: Rgb<u8>, name: &'static str) {
