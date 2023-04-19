@@ -117,7 +117,6 @@ impl GUIrunner {
 }
 impl eframe::App for GUIrunner {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
-        puffin::profile_function!();
         puffin::GlobalProfiler::lock().new_frame();
         if self.profile {
             puffin_egui::profiler_window(ctx);
