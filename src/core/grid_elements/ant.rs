@@ -209,6 +209,7 @@ impl Ant {
             }
         }
         self.pos = min_cell.unwrap_or(self.pos);
+        grid.put_pheremones(self.pos);
         return self.pos;
     }
 

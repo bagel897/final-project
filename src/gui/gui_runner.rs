@@ -129,10 +129,21 @@ impl eframe::App for GUIrunner {
             {
                 self.timer_reset();
             }
-            ui.add(egui::Slider::new(&mut self.runner.grid.smell, 0.01..=1.0).text("Smell offset"));
             ui.add(
-                egui::Slider::new(&mut self.runner.grid.signal_radius, 0.0..=1000.0)
+                egui::Slider::new(&mut self.runner.grid.options.smell, 0.01..=1.0)
+                    .text("Smell offset"),
+            );
+            ui.add(
+                egui::Slider::new(&mut self.runner.grid.options.signal_radius, 0.0..=1000.0)
                     .text("Signal Radius"),
+            );
+            ui.add(
+                egui::Slider::new(&mut self.runner.grid.options.starting_food, 1..=100)
+                    .text("Starting Food"),
+            );
+            ui.add(
+                egui::Slider::new(&mut self.runner.grid.options.pheremones_inc, 0.0..=1000.0)
+                    .text("pheremones"),
             );
             if ui.button("Add food (random)").clicked() {
                 self.runner.put_food(1);

@@ -11,16 +11,31 @@ use std::{
     fmt::Display,
     rc::Rc,
 };
-
+pub(crate) struct Options {
+    pub pheremones_inc: f64,
+    pub smell: f64,
+    pub starting_food: usize,
+    pub signal_radius: f64,
+    pub max_pheremones: f64,
+}
+impl Default for Options {
+    fn default() -> Self {
+        return Options {
+            pheremones_inc: 1.0,
+            smell: 0.5,
+            starting_food: 10,
+            signal_radius: 10.0,
+            max_pheremones: 10.0,
+        };
+    }
+}
 use super::{grid::GridIterator, signals::Signal};
 pub(crate) struct AntGrid {
     grid: Grid,
     ant_queue: VecDeque<Rc<RefCell<dyn GridElement>>>,
     food: Vec<Rc<RefCell<Food>>>,
     hives: HashMap<usize, Vec<Rc<RefCell<Hive>>>>,
-    pub smell: f64,
-    pub starting_food: usize,
-    pub signal_radius: f64,
+    pub options: Options,
     rng: rand::rngs::ThreadRng,
 }
 impl AntGrid {
@@ -31,9 +46,7 @@ impl AntGrid {
             food: Vec::new(),
             hives: HashMap::new(),
             rng: thread_rng(),
-            smell: 0.5,
-            starting_food: 10,
-            signal_radius: 10.0,
+            options: Options::default(),
         }
     }
 
@@ -62,8 +75,8 @@ impl AntGrid {
         self.ant_queue = other_queue;
     }
     fn adjust(&mut self, distance: f64) -> f64 {
-        let top = 1.0 + self.smell;
-        let bot = 1.0 - self.smell;
+        let top = 1.0 + self.options.smell;
+        let bot = 1.0 - self.options.smell;
         let rand = self.rng.sample(Uniform::new(bot, top));
         return rand * distance;
     }
@@ -71,14 +84,23 @@ impl AntGrid {
         if self.is_blocked(pt) {
             return None;
         }
-        return Some(self.grid.get(pt).pheremones);
+        let p = self.adjust(self.grid.get(pt).pheremones);
+        let val = self.adjust(
+            self.food
+                .iter()
+                .map(|f| -> f64 {
+                    return pt.distance(&f.borrow().pos());
+                })
+                .min_by(|x, y| x.total_cmp(y))?,
+        );
+        return Some(val - f64::min(p, self.options.max_pheremones));
     }
     pub(super) fn send_signal(&mut self, pt: &Coord, signal: Signal, team: Team) {
         for mut i in self
             .ant_queue
             .iter()
             .filter_map(|f| f.try_borrow_mut().ok())
-            .filter(|f| f.pos().distance(pt) < self.signal_radius)
+            .filter(|f| f.pos().distance(pt) < self.options.signal_radius)
             .filter(|f| f.team().map_or(false, |t| t == team))
         {
             i.recv_signal(signal);
@@ -166,7 +188,11 @@ impl AntGrid {
         self.put(pos, Rc::new(RefCell::new(Ant::new(&pos, team))));
     }
     pub fn put_hive(&mut self, pos: Coord, team: Team) {
-        let hive = Rc::new(RefCell::new(Hive::new(pos, team, self.starting_food)));
+        let hive = Rc::new(RefCell::new(Hive::new(
+            pos,
+            team,
+            self.options.starting_food,
+        )));
         if self.put(pos, hive.clone()) {
             let id = hive.borrow().team().unwrap().id;
             self.hives
@@ -191,6 +217,9 @@ impl AntGrid {
         if self.put(pos, food.clone()) {
             self.food.push(food);
         }
+    }
+    pub fn put_pheremones(&mut self, pos: Coord) {
+        self.grid.get_mut(&pos).pheremones += self.options.pheremones_inc
     }
     pub fn rows(&self) -> usize {
         return self.grid.rows;
