@@ -81,7 +81,7 @@ impl GUIrunner {
     fn timer_reset(&mut self) {
         self.timer = Timer::new();
     }
-    fn add(&mut self, rect: Pos2, drag: Vec2) {
+    fn add(&mut self, rect: Pos2, _drag: Vec2) {
         let y = rect.y as usize;
         let x = rect.x as usize;
         let c = Coord { x, y };
@@ -116,12 +116,12 @@ impl GUIrunner {
     }
 }
 impl eframe::App for GUIrunner {
-    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         puffin::GlobalProfiler::lock().new_frame();
         if self.profile {
             puffin_egui::profiler_window(ctx);
         }
-        let input = egui::RawInput::default();
+        let _input = egui::RawInput::default();
         egui::SidePanel::right("Current Round Options").show(&ctx, |ui| {
             if ui
                 .add(egui::Slider::new(&mut self.speed, 1..=100).text("Rounds/frame"))
