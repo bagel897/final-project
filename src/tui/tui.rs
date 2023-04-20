@@ -1,5 +1,5 @@
 use crate::core::runner::Runner;
-fn run_tui() {
+pub(crate) fn run_tui() {
     let num_ants = 0;
     let num_food = 4;
     let cols = 40;

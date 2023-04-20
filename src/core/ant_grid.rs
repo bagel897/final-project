@@ -2,9 +2,7 @@ use rand::{distributions::Uniform, thread_rng, Rng};
 
 use crate::core::{
     grid::Grid,
-    grid_elements::{
-        ant::Ant, dirt::Dirt, empty::Empty, food::Food, grid_element::GridElement, hive::Hive,
-    },
+    grid_elements::{ant::Ant, dirt::Dirt, food::Food, grid_element::GridElement, hive::Hive},
     Coord, Team,
 };
 use std::{
@@ -76,15 +74,15 @@ impl AntGrid {
         return Some(self.grid.get(pt).pheremones);
     }
     pub(super) fn send_signal(&mut self, pt: &Coord, signal: Signal, team: Team) {
-        // todo!();
-        // for i in self.grid.cells_dist(pt, self.signal_radius) {
-        //     if i.try_borrow().is_err() {
-        //         continue;
-        //     }
-        //     if i.borrow_mut().team().map_or(false, |t| t == team) {
-        //         i.borrow_mut().recv_signal(signal);
-        //     }
-        // }
+        for mut i in self
+            .ant_queue
+            .iter()
+            .filter_map(|f| f.try_borrow_mut().ok())
+            .filter(|f| f.pos().distance(pt) < self.signal_radius)
+            .filter(|f| f.team().map_or(false, |t| t == team))
+        {
+            i.recv_signal(signal);
+        }
     }
     pub fn distance_to_enemy(&mut self, pt: &Coord, team: &Team) -> Option<f64> {
         if self.is_blocked(pt) {

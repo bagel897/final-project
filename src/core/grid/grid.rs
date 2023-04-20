@@ -66,9 +66,10 @@ impl<'a> Iterator for GridIterator<'a> {
         }
         let c = self.coord.clone();
         let res = self.grid.get(&self.coord);
-        if self.coord.x < self.grid.cols {
+        if self.coord.x + 1 < self.grid.cols {
             self.coord.x += 1;
         } else {
+            self.coord.x = 0;
             self.coord.y += 1;
         }
         return Some((c, res));
