@@ -200,31 +200,18 @@ impl AntGrid {
                 team: Some(team),
             };
     }
-    pub fn put_ant(&mut self, pos: Coord, team: &Team) {
-        self.put(pos, Rc::new(RefCell::new(Ant::new(&pos, team))));
-    }
-    pub fn put_hive(&mut self, pos: Coord, team: Team) {
-        let hive = Rc::new(RefCell::new(Hive::new(
-            pos,
-            team,
-            self.options.starting_food,
-        )));
-        self.put(pos, hive.clone())
-    }
-    fn put(&mut self, pos: Coord, elem: Rc<RefCell<dyn GridElement>>) {
+    pub fn put(&mut self, elem: dyn GridElement) {
+        let pos = elem.pos().clone();
+        let elem_ref = Rc::new(RefCell::new(elem));
         if !self.grid.does_exist(&pos) {
             return;
         }
         if self.is_blocked(&pos) {
             return;
         }
-        self.grid.get_mut(&pos).elem = Some(elem.clone());
+        self.grid.get_mut(&pos).elem = Some(elem_ref.clone());
         self.elements
-            .insert(elem.borrow().team_element(), elem.clone());
-    }
-    pub fn put_food(&mut self, pos: Coord) {
-        let food = Rc::new(RefCell::new(Food::new(&pos)));
-        self.put(pos, food.clone())
+            .insert(elem_ref.borrow().team_element(), elem_ref.clone());
     }
     pub fn put_pheremones(&mut self, pos: Coord, prev: Coord) {
         self.grid.get_mut(&pos).pheremones = Some(prev);
@@ -236,10 +223,6 @@ impl AntGrid {
         return self.grid.cols;
     }
 
-    pub fn put_dirt(&mut self, pos: Coord) {
-        let dirt = Rc::new(RefCell::new(Dirt::new(&pos)));
-        self.put(pos, dirt);
-    }
     pub fn iter(&self) -> GridIterator {
         return self.grid.iter();
     }

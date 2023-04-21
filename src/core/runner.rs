@@ -1,22 +1,72 @@
 use std::time::Instant;
 
 use image::Rgb;
-use rand::{seq::IteratorRandom, thread_rng, Rng};
+use rand::{thread_rng, Rng};
 
 use crate::core::{AntGrid, Coord, Team};
 
-pub(crate) struct Runner {
+use super::{
+    ant_grid::Options,
+    grid_elements::{grid_element::GridElement, hive::Hive},
+};
+pub(crate) trait Runner {
+    fn new(rows: usize, cols: usize) -> Self
+    where
+        Self: Sized;
+
+    fn put(&mut self, elem: dyn GridElement);
+    fn set_opts(&mut self, options: Options);
+    fn print(&self);
+    fn run_dynamic(&mut self) -> usize;
+    fn reset(&self);
+}
+pub(crate) struct BaseRunner {
     pub grid: AntGrid,
     rng: rand::rngs::ThreadRng,
     pub(crate) teams: Vec<Team>,
 }
-impl Runner {
-    pub fn new(rows: usize, cols: usize) -> Self {
-        Runner {
+impl Runner for BaseRunner {
+    fn new(rows: usize, cols: usize) -> Self {
+        let mut res = BaseRunner {
             grid: AntGrid::new(rows, cols),
             rng: thread_rng(),
             teams: Vec::new(),
+        };
+        res.default_setup();
+        return res;
+    }
+    fn set_opts(&mut self, options: Options) {
+        self.grid.options = options;
+    }
+
+    fn put(&mut self, elem: dyn GridElement) {
+        self.grid.put(elem);
+    }
+    fn print(&self) {
+        println!("{}", self.grid);
+    }
+    fn run_dynamic(&mut self) -> usize {
+        puffin::profile_function!();
+        let start = Instant::now();
+        let mut n = 0;
+        while start.elapsed().as_millis() < (1000.0 / 60.0) as u128 && n < self.grid.options.speed {
+            self.grid.run_round();
+            n += 1;
         }
+        return n;
+    }
+    fn reset(&self) {
+        let (rows, cols) = (self.grid.rows(), self.grid.cols());
+        self.grid = AntGrid::new(rows, cols);
+        self.teams.clear();
+        self.default_setup();
+    }
+}
+impl BaseRunner {
+    fn default_setup(&mut self) {
+        self.put_team(Rgb([255, 0, 0]), "Red");
+        self.put_team(Rgb([255, 0, 255]), "Purple");
+        self.put_team(Rgb([255, 255, 0]), "Yellow");
     }
     fn rand_coord(&mut self) -> Coord {
         let x = self.rng.gen_range(0..self.grid.cols());
@@ -32,49 +82,6 @@ impl Runner {
         };
         self.teams.push(team);
         let rand = self.rand_coord();
-        self.grid.put_hive(rand, team);
-    }
-    pub fn put_teams(&mut self) {
-        self.put_team(Rgb([255, 0, 0]), "Red");
-        self.put_team(Rgb([255, 0, 255]), "Purple");
-        self.put_team(Rgb([255, 255, 0]), "Yellow");
-    }
-    pub fn put_ants(&mut self, num_ants: usize) {
-        for _ in 0..num_ants {
-            let rand = self.rand_coord();
-            let team = self.teams.iter().choose(&mut self.rng).unwrap();
-            self.grid.put_ant(rand, team)
-        }
-    }
-    pub fn put_food(&mut self, num_food: usize) {
-        for _ in 0..num_food {
-            let rand = self.rand_coord();
-            self.grid.put_food(rand);
-        }
-    }
-    pub fn print(&self) {
-        println!("{}", self.grid);
-    }
-    pub fn run(&mut self, num_rounds: usize, interval: Option<usize>) {
-        for i in 0..num_rounds {
-            self.grid.run_round();
-            let int = match interval {
-                None => continue,
-                Some(i) => i,
-            };
-            if i % int == int - 1 {
-                self.print();
-            }
-        }
-    }
-    pub fn run_dynamic(&mut self) -> usize {
-        puffin::profile_function!();
-        let start = Instant::now();
-        let mut n = 0;
-        while start.elapsed().as_millis() < (1000.0 / 60.0) as u128 && n < self.grid.options.speed {
-            self.grid.run_round();
-            n += 1;
-        }
-        return n;
+        self.grid.put(Hive::new(rand, team));
     }
 }

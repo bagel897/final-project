@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use crate::core::{Coord, Runner, Team};
+use crate::core::{BaseRunner, Coord, Runner, Team};
 use eframe::Renderer;
 use egui::{Frame, Image, Pos2, TextureHandle, TextureOptions, Vec2};
 use puffin;
@@ -45,7 +45,7 @@ const DIRT_MODE: AddMode = AddMode {
     selection_mode: SelectionMode::DIRT,
 };
 struct GUIrunner {
-    runner: Runner,
+    runner: Box<dyn Runner>,
     texture: TextureHandle,
     rows: usize,
     cols: usize,
@@ -55,8 +55,7 @@ struct GUIrunner {
 }
 impl GUIrunner {
     pub fn new(rows: usize, cols: usize, cc: &eframe::CreationContext<'_>) -> Self {
-        let mut runner = Runner::new(rows, cols);
-        runner.put_teams();
+        let mut runner = Box::new(BaseRunner::new(rows, cols));
         let image = get_image(&runner.grid);
         let texture = cc
             .egui_ctx
@@ -72,8 +71,7 @@ impl GUIrunner {
         }
     }
     fn reset(&mut self) {
-        self.runner = Runner::new(self.rows, self.cols);
-        self.runner.put_teams();
+        self.runner.reset();
         self.timer_reset();
     }
     fn timer_reset(&mut self) {
@@ -84,7 +82,7 @@ impl GUIrunner {
         let x = rect.x as usize;
         let c = Coord { x, y };
         match self.add_mode.selection_mode {
-            SelectionMode::HIVE => self.runner.grid.put_hive(c, self.add_mode.team.unwrap()),
+            SelectionMode::HIVE => self.runner.put(Hive::new(c, self.add_mode.team.unwrap())),
             SelectionMode::FOOD => self.runner.grid.put_food(c),
             SelectionMode::DIRT => {
                 self.runner.grid.put_dirt(c);
