@@ -4,12 +4,12 @@ use image::Rgb;
 
 use crate::core::grid_elements::{empty::Empty, grid_element::GridElement};
 
-use super::Coord;
+use super::{Coord, Team};
 
 #[derive(Clone)]
 pub(crate) struct Cell {
     pub elem: Option<Rc<RefCell<dyn GridElement>>>,
-    pub pheremones: Option<Coord>,
+    pub pheremones: Option<(Coord, Team)>,
 }
 impl Default for Cell {
     fn default() -> Self {
@@ -34,7 +34,7 @@ impl Cell {
             Some(elem) => elem.borrow().color(),
             None => {
                 if self.pheremones.is_some() {
-                    return Rgb([255, 255, 255]);
+                    return Rgb([10, 10, 10]);
                 } else {
                     return Rgb([0, 0, 0]);
                 }

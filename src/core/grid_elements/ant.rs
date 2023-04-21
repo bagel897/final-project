@@ -45,16 +45,25 @@ impl GridElement for Ant {
 
     fn decide(&mut self, grid: &mut AntGrid) -> Option<Coord> {
         self.init();
+        let old_pos = self.pos.clone();
         let res = match self.state {
             State::Dead => None,
-            State::Food => match grid.get_pheremones(&self.pos) {
-                Some(i) => Some(i),
-                None => Some(self.a_star_find(grid)),
+            State::Food => {
+                let p = grid.get_pheremones(&self.pos);
+                if p.is_some() {
+                    let (dest, team) = p.unwrap();
+                    assert!(dest != self.pos);
+                    if team == self.team && !grid.is_blocked(&dest) {
+                        self.pos = dest;
+                        return Some(dest);
+                    }
+                }
+                return Some(self.a_star_find(grid));
             }
             _ => Some(self.a_star_find(grid)),
         };
-        if res.is_some() && self.state == State::Carrying && self.pos != res.clone().unwrap() {
-            grid.put_pheremones(res.clone().unwrap(), self.pos);
+        if res.is_some() && self.state == State::Carrying && self.pos != old_pos {
+            grid.put_pheremones(self.pos, old_pos, self.team);
         }
         self.cleanup(grid);
         res

@@ -1,14 +1,21 @@
 use egui::ColorImage;
 use image::{Pixel, Rgb};
 
+#[derive(Clone)]
 pub(crate) struct Export {
     colors: Vec<Vec<Rgb<u8>>>,
     rows: usize,
     cols: usize,
+    pub frames: usize,
 }
 impl Export {
     pub fn new(colors: Vec<Vec<Rgb<u8>>>, rows: usize, cols: usize) -> Self {
-        Export { colors, rows, cols }
+        Export {
+            colors,
+            rows,
+            cols,
+            frames: 0,
+        }
     }
     pub fn to_image(&self) -> ColorImage {
         const COLORS: usize = 4;

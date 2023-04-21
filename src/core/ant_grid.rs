@@ -146,7 +146,7 @@ impl AntGrid {
             pt,
         );
     }
-    pub(super) fn get_pheremones(&mut self, pt: &Coord) -> Option<Coord> {
+    pub(super) fn get_pheremones(&mut self, pt: &Coord) -> Option<(Coord, Team)> {
         return self.grid.get(pt).pheremones;
     }
 }
@@ -205,7 +205,7 @@ impl AntGrid {
                     .remove(idx);
                 continue;
             }
-            self.grid.get_mut(&c.unwrap()).elem = Some(ant.clone());
+            self.grid.get_mut(&c.unwrap()).elem = Some(ant);
         }
     }
 
@@ -222,8 +222,8 @@ impl AntGrid {
         self.elements
             .insert(elem_ref.borrow().team_element(), elem_ref.clone());
     }
-    pub fn put_pheremones(&mut self, pos: Coord, prev: Coord) {
-        self.grid.get_mut(&pos).pheremones = Some(prev);
+    pub fn put_pheremones(&mut self, pos: Coord, prev: Coord, team: Team) {
+        self.grid.get_mut(&pos).pheremones = Some((prev, team));
     }
     pub fn rows(&self) -> usize {
         return self.grid.rows;
