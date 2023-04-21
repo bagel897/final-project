@@ -174,7 +174,35 @@ impl AntGrid {
         }
     }
     pub fn run_round(&mut self) {
-        self.run_decide();
+        let mut to_iter: VecDeque<(usize, Rc<RefCell<dyn GridElement>>)> = self
+            .elements
+            .keys()
+            .map(|t| t.clone())
+            .map(|k| {
+                self.elements
+                    .get_vec(&k)
+                    .unwrap()
+                    .iter()
+                    .enumerate()
+                    .map(|(k, v)| (k, v.to_owned()))
+                    .collect::<VecDeque<(usize, Rc<RefCell<dyn GridElement>>)>>()
+            })
+            .flatten()
+            .collect();
+        while !to_iter.is_empty() {
+            let (idx, ant) = to_iter.pop_front().unwrap();
+            let old_pos = ant.borrow().pos().clone();
+            let c = ant.borrow_mut().decide(self);
+            self.grid.get_mut(&old_pos).elem = None;
+            if c.is_none() {
+                self.elements
+                    .get_vec_mut(&ant.borrow().team_element())
+                    .unwrap()
+                    .remove(idx);
+                continue;
+            }
+            self.grid.get_mut(&c.unwrap()).elem = Some(ant.clone());
+        }
     }
 
     pub fn put<T: GridElement + 'static>(&mut self, elem: T) {
