@@ -1,6 +1,6 @@
-use std::fmt::Display;
+use std::{any::TypeId, fmt::Display};
 
-use crate::core::{AntGrid, Coord};
+use crate::core::{team_element::TeamElement, AntGrid, Coord};
 
 use super::grid_element::GridElement;
 
@@ -20,9 +20,6 @@ impl GridElement for Food {
     fn decide(&mut self, _grid: &mut AntGrid) -> Option<Coord> {
         return Some(self.pos);
     }
-    fn is_food(&self) -> bool {
-        return true;
-    }
     fn color(&self) -> Rgb<u8> {
         return Rgb::from([0, 255, 0]);
     }
@@ -37,3 +34,7 @@ impl Display for Food {
         write!(f, "{}", "f".green().bold())
     }
 }
+// pub(crate) const FOOD_ELEMENT: TeamElement = TeamElement {
+//     element: TypeId::of::<Food>(),
+//     team: None,
+// };

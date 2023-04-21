@@ -1,8 +1,8 @@
-use std::fmt::Display;
+use std::{any::TypeId, fmt::Display};
 
 use image::Rgb;
 
-use crate::core::{AntGrid, Coord};
+use crate::core::{team_element::TeamElement, AntGrid, Coord};
 
 use super::grid_element::GridElement;
 #[derive(Debug)]
@@ -33,3 +33,7 @@ impl Display for Dirt {
         write!(f, "x")
     }
 }
+// pub(super) const DIRT_ELEMENT: TeamElement = TeamElement {
+//     element: TypeId::of::<Dirt>(),
+//     team: None,
+// };

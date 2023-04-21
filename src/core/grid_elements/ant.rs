@@ -49,6 +49,9 @@ impl GridElement for Ant {
             State::Dead => None,
             _ => Some(self.a_star_find(grid)),
         };
+        if res.is_some() && self.state == State::Carrying && self.pos != res.clone().unwrap() {
+            grid.put_pheremones(res.clone().unwrap(), self.pos);
+        }
         self.cleanup(grid);
         res
     }
@@ -124,7 +127,7 @@ impl Ant {
             if signal.propogate != 0 {
                 let mut new_sig = signal.clone();
                 new_sig.propogate = signal.propogate - 1;
-                grid.send_signal(&self.pos, new_sig, self.team);
+                grid.send_signal(&self.pos, new_sig, self.team_element());
             }
         }
         self.signals.clear();
@@ -140,7 +143,7 @@ impl Ant {
                             signal_type: SignalType::Deliver,
                             propogate: 0,
                         },
-                        self.team,
+                        self.team_element(),
                     );
                     self.send_carry(grid, pos);
                     self.state = State::Food;
@@ -168,7 +171,7 @@ impl Ant {
                             signal_type: SignalType::Battle,
                             propogate: 0,
                         },
-                        self.team,
+                        self.team_element(),
                     );
                     grid.attack(&pos, &self.team);
                     return true;
@@ -209,7 +212,6 @@ impl Ant {
             }
         }
         self.pos = min_cell.unwrap_or(self.pos);
-        grid.put_pheremones(self.pos);
         return self.pos;
     }
 
@@ -221,7 +223,7 @@ impl Ant {
                 signal_type: SignalType::Carry,
                 propogate: 1,
             },
-            self.team,
+            self.team_element(),
         );
     }
     fn should_battle(&mut self, grid: &mut AntGrid, coord: Coord) -> bool {
@@ -233,7 +235,7 @@ impl Ant {
                     signal_type: SignalType::Battle,
                     propogate: 0,
                 },
-                self.team,
+                self.team_element(),
             );
             self.state = State::Battle;
             return true;
@@ -248,7 +250,7 @@ impl Ant {
                 signal_type: SignalType::Food,
                 propogate: 1,
             },
-            self.team,
+            self.team_element(),
         );
     }
     fn get_dist(&self, pos: &Coord, grid: &mut AntGrid) -> Option<f64> {

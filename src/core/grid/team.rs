@@ -1,7 +1,7 @@
 use colored::Color;
 use image::Rgb;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) struct Team {
     pub color: Rgb<u8>,
     pub id: usize,

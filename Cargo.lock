@@ -1008,6 +1008,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "multimap"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "70db9248a93dc36a36d9a47898caa007a32755c7ad140ec64eeeb50d5a730631"
+
+[[package]]
 name = "naga"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1533,6 +1539,7 @@ dependencies = [
  "egui",
  "egui-wgpu",
  "image",
+ "multimap",
  "puffin",
  "puffin_egui",
  "rand",

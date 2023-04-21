@@ -1,21 +1,24 @@
-use std::fmt::{Debug, Display};
+use std::{
+    any::Any,
+    fmt::{Debug, Display},
+};
 
 use image::Rgb;
 
-use crate::core::{signals::Signal, AntGrid, Coord, Team};
+use crate::core::{signals::Signal, team_element::TeamElement, AntGrid, Coord, Team};
 
-pub(crate) trait GridElement: Debug + Display {
+pub(crate) trait GridElement: Debug + Display + Any {
     fn pos(&self) -> &Coord;
     fn exists(&self) -> bool;
     fn decide(&mut self, grid: &mut AntGrid) -> Option<Coord>;
     fn team(&self) -> Option<Team> {
         None
     }
-    fn is_food(&self) -> bool {
-        return false;
-    }
-    fn is_hive(&self) -> bool {
-        return false;
+    fn team_element(&self) -> TeamElement {
+        TeamElement {
+            element: self.type_id(),
+            team: self.team(),
+        }
     }
     fn attacked(&mut self, _damage: usize) {}
     fn color(&self) -> Rgb<u8>;

@@ -6,7 +6,7 @@ use super::Coord;
 
 pub(crate) struct Cell {
     pub elem: Option<Rc<RefCell<dyn GridElement>>>,
-    pub pheremones: f64,
+    pub pheremones: Option<Coord>,
 }
 impl Default for Cell {
     fn default() -> Self {
@@ -17,7 +17,7 @@ impl Cell {
     fn new() -> Self {
         return Cell {
             elem: None,
-            pheremones: 0.0,
+            pheremones: None,
         };
     }
     pub fn get_elem(&self, pos: &Coord) -> Rc<RefCell<dyn GridElement>> {

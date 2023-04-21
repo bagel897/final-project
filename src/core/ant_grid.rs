@@ -1,3 +1,4 @@
+use multimap::MultiMap;
 use rand::{distributions::Uniform, thread_rng, Rng};
 
 use crate::core::{
@@ -6,6 +7,7 @@ use crate::core::{
     Coord, Team,
 };
 use std::{
+    any::{Any, TypeId},
     cell::RefCell,
     collections::{HashMap, VecDeque},
     fmt::Display,
@@ -29,12 +31,10 @@ impl Default for Options {
         };
     }
 }
-use super::{grid::GridIterator, signals::Signal};
+use super::{grid::GridIterator, signals::Signal, team_element::TeamElement};
 pub(crate) struct AntGrid {
     grid: Grid,
-    ant_queue: VecDeque<Rc<RefCell<dyn GridElement>>>,
-    food: Vec<Rc<RefCell<Food>>>,
-    hives: HashMap<usize, Vec<Rc<RefCell<Hive>>>>,
+    elements: MultiMap<TeamElement, Rc<RefCell<dyn GridElement>>>,
     pub options: Options,
     rng: rand::rngs::ThreadRng,
 }
@@ -42,9 +42,7 @@ impl AntGrid {
     pub fn new(rows: usize, cols: usize) -> Self {
         AntGrid {
             grid: Grid::new(rows, cols),
-            ant_queue: VecDeque::new(),
-            food: Vec::new(),
-            hives: HashMap::new(),
+            elements: MultiMap::new(),
             rng: thread_rng(),
             options: Options::default(),
         }
@@ -60,9 +58,13 @@ impl AntGrid {
         });
     }
     fn run_decide(&mut self) {
-        let mut other_queue = VecDeque::new();
-        while !self.ant_queue.is_empty() {
-            let ant = self.ant_queue.pop_front().unwrap();
+        let mut to_iter: VecDeque<Rc<RefCell<dyn GridElement>>> = self
+            .elements
+            .flat_iter_mut()
+            .map(|(_, v)| v.to_owned())
+            .collect();
+        while !to_iter.is_empty() {
+            let ant = to_iter.pop_front().unwrap();
             let old_pos = ant.borrow().pos().clone();
             let c = ant.borrow_mut().decide(self);
             self.grid.get_mut(&old_pos).elem = None;
@@ -70,9 +72,7 @@ impl AntGrid {
                 continue;
             }
             self.grid.get_mut(&c.unwrap()).elem = Some(ant.clone());
-            other_queue.push_back(ant);
         }
-        self.ant_queue = other_queue;
     }
     fn adjust(&mut self, distance: f64) -> f64 {
         let top = 1.0 + self.options.smell;
@@ -80,68 +80,79 @@ impl AntGrid {
         let rand = self.rng.sample(Uniform::new(bot, top));
         return rand * distance;
     }
-    pub fn distance_to_food(&mut self, pt: &Coord) -> Option<f64> {
+    fn distance(&mut self, team_elem: &TeamElement, pt: &Coord) -> Option<f64> {
         if self.is_blocked(pt) {
             return None;
         }
-        let p = self.adjust(self.grid.get(pt).pheremones);
-        let val = self.adjust(
-            self.food
-                .iter()
-                .map(|f| -> f64 {
-                    return pt.distance(&f.borrow().pos());
-                })
-                .min_by(|x, y| x.total_cmp(y))?,
+        return Some(
+            self.adjust(
+                self.elements
+                    .get_vec(team_elem)?
+                    .iter()
+                    .filter_map(|f| f.try_borrow().ok())
+                    .map(|f| pt.distance(&f.pos()))
+                    .min_by(|x, y| x.total_cmp(y))?,
+            ),
         );
-        return Some(val - f64::min(p, self.options.max_pheremones));
     }
-    pub(super) fn send_signal(&mut self, pt: &Coord, signal: Signal, team: Team) {
+    pub fn distance_to_food(&mut self, pt: &Coord) -> Option<f64> {
+        return self.distance(
+            &TeamElement {
+                element: TypeId::of::<Food>(),
+                team: None,
+            },
+            pt,
+        );
+    }
+    pub(super) fn send_signal(&mut self, pt: &Coord, signal: Signal, team_elem: TeamElement) {
         for mut i in self
-            .ant_queue
+            .elements
+            .get_vec_mut(&team_elem)
+            .unwrap()
             .iter()
             .filter_map(|f| f.try_borrow_mut().ok())
             .filter(|f| f.pos().distance(pt) < self.options.signal_radius)
-            .filter(|f| f.team().map_or(false, |t| t == team))
         {
             i.recv_signal(signal);
+        }
+        match self.elements.get_vec_mut(&TeamElement {
+            element: TypeId::of::<Hive>(),
+            team: team_elem.team,
+        }) {
+            None => (),
+            Some(l) => {
+                for mut i in l
+                    .iter()
+                    .filter_map(|f| f.try_borrow_mut().ok())
+                    .filter(|f| f.pos().distance(pt) < self.options.signal_radius)
+                {
+                    i.recv_signal(signal);
+                }
+            }
         }
     }
     pub fn distance_to_enemy(&mut self, pt: &Coord, team: &Team) -> Option<f64> {
         if self.is_blocked(pt) {
             return None;
         }
-        Some(
-            self.adjust(
-                self.ant_queue
-                    .iter()
-                    .filter(|f| {
-                        f.try_borrow()
-                            .map_or(false, |f| f.team().map_or(false, |g| g != *team))
-                    })
-                    .map(|f| -> f64 {
-                        return pt.distance(&f.borrow().pos());
-                    })
-                    .min_by(|x, y| x.total_cmp(y))?,
-            ),
-        )
+        self.elements
+            .keys()
+            .filter(|k| k.team.map_or(false, |t| t != *team))
+            .map(|elem| self.distance(elem, pt))
+            .filter_map(|f| f)
+            .min_by(|x, y| x.total_cmp(y))
     }
     pub fn distance_to_hive(&mut self, pt: &Coord, team: &Team) -> Option<f64> {
         if self.is_blocked(pt) {
             return None;
         }
-        match self.hives.get(&team.id) {
-            None => None,
-
-            Some(i) => Some(
-                self.adjust(
-                    i.iter()
-                        .map(|f| -> f64 {
-                            return pt.distance(&f.borrow().pos());
-                        })
-                        .min_by(|x, y| x.total_cmp(y))?,
-                ),
-            ),
-        }
+        return self.distance(
+            &TeamElement {
+                element: TypeId::of::<Hive>(),
+                team: Some(*team),
+            },
+            pt,
+        );
     }
     pub fn run_round(&mut self) {
         self.run_decide();
@@ -174,15 +185,15 @@ impl AntGrid {
         }
         let ant = self.grid.get(coord).get_elem(&coord);
 
-        return ant.borrow().is_food();
+        return ant.borrow().type_id() == TypeId::of::<Food>();
     }
     pub fn is_hive_same_team(&self, coord: &Coord, team: Team) -> bool {
         if !self.grid.does_exist(coord) {
             return false;
         }
         let ant = self.grid.get(coord).get_elem(&coord);
-
-        return ant.borrow().is_hive() && ant.borrow().team().map_or(false, |t| t == team);
+        let elem = ant.borrow().team_element();
+        return elem.type_id() == TypeId::of::<Hive>() && elem.team == Some(team);
     }
     pub fn put_ant(&mut self, pos: Coord, team: &Team) {
         self.put(pos, Rc::new(RefCell::new(Ant::new(&pos, team))));
@@ -193,33 +204,24 @@ impl AntGrid {
             team,
             self.options.starting_food,
         )));
-        if self.put(pos, hive.clone()) {
-            let id = hive.borrow().team().unwrap().id;
-            self.hives
-                .entry(id)
-                .or_insert_with(|| Vec::new())
-                .push(hive);
-        }
+        self.put(pos, hive.clone())
     }
-    fn put(&mut self, pos: Coord, elem: Rc<RefCell<dyn GridElement>>) -> bool {
+    fn put(&mut self, pos: Coord, elem: Rc<RefCell<dyn GridElement>>) {
         if !self.grid.does_exist(&pos) {
-            return false;
+            return;
         }
         if self.is_blocked(&pos) {
-            return false;
+            return;
         }
         self.grid.get_mut(&pos).elem = Some(elem.clone());
-        self.ant_queue.push_back(elem);
-        return true;
+        self.elements.insert(elem.borrow().team_element(), elem);
     }
     pub fn put_food(&mut self, pos: Coord) {
         let food = Rc::new(RefCell::new(Food::new(&pos)));
-        if self.put(pos, food.clone()) {
-            self.food.push(food);
-        }
+        self.put(pos, food.clone())
     }
-    pub fn put_pheremones(&mut self, pos: Coord) {
-        self.grid.get_mut(&pos).pheremones += self.options.pheremones_inc
+    pub fn put_pheremones(&mut self, pos: Coord, prev: Coord) {
+        self.grid.get_mut(&pos).pheremones = Some(prev);
     }
     pub fn rows(&self) -> usize {
         return self.grid.rows;

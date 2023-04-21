@@ -46,9 +46,6 @@ impl GridElement for Hive {
         }
         return Some(self.pos);
     }
-    fn is_hive(&self) -> bool {
-        return true;
-    }
     fn color(&self) -> Rgb<u8> {
         return self.team.color;
     }
