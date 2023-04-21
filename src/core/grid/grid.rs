@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use super::{Cell, Coord};
-
+#[derive(Clone)]
 pub(crate) struct Grid {
     pub grid: Vec<Vec<Cell>>,
     pub rows: usize,

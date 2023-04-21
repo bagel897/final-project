@@ -4,7 +4,7 @@ use colored::{Color, Colorize};
 use image::Rgb;
 use strum::IntoEnumIterator;
 
-use crate::core::{signals::SignalType, team_element::ElementType, AntGrid, Coord, Dir, Team};
+use crate::core::{signals::SignalType, team_element::ElementType, Ant, AntGrid, Coord, Dir, Team};
 
 use super::grid_element::GridElement;
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -37,7 +37,7 @@ impl GridElement for Hive {
                 let n = next.unwrap();
                 if !grid.is_blocked(&n) {
                     if self.food > 0 {
-                        grid.put_ant(n, &self.team);
+                        grid.put(Ant::new(&n, &self.team));
                         self.food -= 1;
                     }
                     break;

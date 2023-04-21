@@ -1,11 +1,7 @@
 use multimap::MultiMap;
 use rand::{distributions::Uniform, thread_rng, Rng};
 
-use crate::core::{
-    grid::Grid,
-    grid_elements::{ant::Ant, dirt::Dirt, food::Food, grid_element::GridElement, hive::Hive},
-    Coord, Team,
-};
+use crate::core::{grid::Grid, grid_elements::grid_element::GridElement, Coord, Team};
 use std::{cell::RefCell, collections::VecDeque, fmt::Display, rc::Rc};
 pub(crate) struct Options {
     pub pheremones_inc: f64,
@@ -200,7 +196,7 @@ impl AntGrid {
                 team: Some(team),
             };
     }
-    pub fn put(&mut self, elem: dyn GridElement) {
+    pub fn put<T: GridElement>(&mut self, elem: T) {
         let pos = elem.pos().clone();
         let elem_ref = Rc::new(RefCell::new(elem));
         if !self.grid.does_exist(&pos) {
@@ -225,6 +221,9 @@ impl AntGrid {
 
     pub fn iter(&self) -> GridIterator {
         return self.grid.iter();
+    }
+    pub fn export(&self) -> Grid {
+        return self.grid.clone();
     }
 }
 impl Display for AntGrid {

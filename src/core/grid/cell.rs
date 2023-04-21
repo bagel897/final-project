@@ -4,6 +4,7 @@ use crate::core::grid_elements::{empty::Empty, grid_element::GridElement};
 
 use super::Coord;
 
+#[derive(Clone)]
 pub(crate) struct Cell {
     pub elem: Option<Rc<RefCell<dyn GridElement>>>,
     pub pheremones: Option<Coord>,

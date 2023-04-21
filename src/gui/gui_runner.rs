@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use crate::core::{BaseRunner, Coord, Runner, Team};
+use crate::core::{ant_grid::Options, BaseRunner, Coord, Hive, Runner, Team};
 use eframe::Renderer;
 use egui::{Frame, Image, Pos2, TextureHandle, TextureOptions, Vec2};
 use puffin;
@@ -52,11 +52,12 @@ struct GUIrunner {
     timer: Timer,
     add_mode: AddMode,
     profile: bool,
+    options: Options,
 }
 impl GUIrunner {
     pub fn new(rows: usize, cols: usize, cc: &eframe::CreationContext<'_>) -> Self {
         let mut runner = Box::new(BaseRunner::new(rows, cols));
-        let image = get_image(&runner.grid);
+        let image = get_image(&runner.export());
         let texture = cc
             .egui_ctx
             .load_texture("ants", image, TextureOptions::default());
@@ -68,6 +69,7 @@ impl GUIrunner {
             timer: Timer::new(),
             add_mode: FOOD_MODE,
             profile: false,
+            options: Options::default(),
         }
     }
     fn reset(&mut self) {
@@ -82,10 +84,14 @@ impl GUIrunner {
         let x = rect.x as usize;
         let c = Coord { x, y };
         match self.add_mode.selection_mode {
-            SelectionMode::HIVE => self.runner.put(Hive::new(c, self.add_mode.team.unwrap())),
-            SelectionMode::FOOD => self.runner.grid.put_food(c),
+            SelectionMode::HIVE => self.runner.put(Hive::new(
+                c,
+                self.add_mode.team.unwrap(),
+                self.options.starting_food,
+            )),
+            SelectionMode::FOOD => self.runner.put(Food::new(c)),
             SelectionMode::DIRT => {
-                self.runner.grid.put_dirt(c);
+                self.runner.put(Dirt::new(c));
                 // let mut bounds = [0, drag.x.round() as u32];
                 // bounds.sort();
                 // println!("{:?}", bounds);
@@ -120,40 +126,33 @@ impl eframe::App for GUIrunner {
         let _input = egui::RawInput::default();
         egui::SidePanel::right("Current Round Options").show(&ctx, |ui| {
             if ui
-                .add(
-                    egui::Slider::new(&mut self.runner.grid.options.speed, 1..=100)
-                        .text("Rounds/frame"),
-                )
+                .add(egui::Slider::new(&mut self.options.speed, 1..=100).text("Rounds/frame"))
                 .changed()
             {
                 self.timer_reset();
             }
+            ui.add(egui::Slider::new(&mut self.options.smell, 0.01..=1.0).text("Smell offset"));
             ui.add(
-                egui::Slider::new(&mut self.runner.grid.options.smell, 0.01..=1.0)
-                    .text("Smell offset"),
-            );
-            ui.add(
-                egui::Slider::new(&mut self.runner.grid.options.signal_radius, 0.0..=1000.0)
+                egui::Slider::new(&mut self.options.signal_radius, 0.0..=1000.0)
                     .text("Signal Radius"),
             );
             ui.add(
-                egui::Slider::new(&mut self.runner.grid.options.starting_food, 1..=100)
-                    .text("Starting Food"),
+                egui::Slider::new(&mut self.options.starting_food, 1..=100).text("Starting Food"),
             );
             ui.add(
-                egui::Slider::new(&mut self.runner.grid.options.pheremones_inc, 0.0..=1000.0)
+                egui::Slider::new(&mut self.options.pheremones_inc, 0.0..=1000.0)
                     .text("pheremones"),
             );
-            if ui.button("Add food (random)").clicked() {
-                self.runner.put_food(1);
-            }
+            // if ui.button("Add food (random)").clicked() {
+            //     self.runner.put_food(1);
+            // }
             if ui.button("Reset grid").clicked() {
                 self.reset();
             }
             ui.checkbox(&mut self.profile, "Show profiler");
             ui.radio_value(&mut self.add_mode, FOOD_MODE, "Add Food");
             ui.radio_value(&mut self.add_mode, DIRT_MODE, "Add Dirt");
-            for team in self.runner.teams.iter() {
+            for team in self.runner.teams().iter() {
                 ui.radio_value(
                     &mut self.add_mode,
                     AddMode {
@@ -169,6 +168,7 @@ impl eframe::App for GUIrunner {
                 self.timer.fps()
             )))
         });
+        self.runner.set_opts(self.options);
         self.timer.tick(self.runner.run_dynamic());
         egui::Window::new("Ant Simulation")
             .collapsible(false)
@@ -178,7 +178,7 @@ impl eframe::App for GUIrunner {
             .frame(Frame::none())
             .show(&ctx, |ui| {
                 self.texture
-                    .set(get_image(&self.runner.grid), TextureOptions::default());
+                    .set(get_image(&self.runner.export()), TextureOptions::default());
                 let rect = ui.available_size();
                 let y = rect.y as usize;
                 let x = rect.x as usize;
