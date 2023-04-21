@@ -6,13 +6,7 @@ use crate::core::{
     grid_elements::{ant::Ant, dirt::Dirt, food::Food, grid_element::GridElement, hive::Hive},
     Coord, Team,
 };
-use std::{
-    any::{Any, TypeId},
-    cell::RefCell,
-    collections::{HashMap, VecDeque},
-    fmt::Display,
-    rc::Rc,
-};
+use std::{cell::RefCell, collections::VecDeque, fmt::Display, rc::Rc};
 pub(crate) struct Options {
     pub pheremones_inc: f64,
     pub smell: f64,
@@ -31,7 +25,12 @@ impl Default for Options {
         };
     }
 }
-use super::{grid::GridIterator, signals::Signal, team_element::TeamElement};
+use super::{
+    grid::GridIterator,
+    grid_elements::food::FOOD_ELEMENT,
+    signals::Signal,
+    team_element::{ElementType, TeamElement},
+};
 pub(crate) struct AntGrid {
     grid: Grid,
     elements: MultiMap<TeamElement, Rc<RefCell<dyn GridElement>>>,
@@ -96,13 +95,7 @@ impl AntGrid {
         );
     }
     pub fn distance_to_food(&mut self, pt: &Coord) -> Option<f64> {
-        return self.distance(
-            &TeamElement {
-                element: TypeId::of::<Food>(),
-                team: None,
-            },
-            pt,
-        );
+        return self.distance(&FOOD_ELEMENT, pt);
     }
     pub(super) fn send_signal(&mut self, pt: &Coord, signal: Signal, team_elem: TeamElement) {
         for mut i in self
@@ -116,7 +109,7 @@ impl AntGrid {
             i.recv_signal(signal);
         }
         match self.elements.get_vec_mut(&TeamElement {
-            element: TypeId::of::<Hive>(),
+            element: ElementType::Hive,
             team: team_elem.team,
         }) {
             None => (),
@@ -135,9 +128,15 @@ impl AntGrid {
         if self.is_blocked(pt) {
             return None;
         }
-        self.elements
+        let elems: Vec<TeamElement> = self
+            .elements
             .keys()
             .filter(|k| k.team.map_or(false, |t| t != *team))
+            .map(|t| t.clone())
+            .collect();
+
+        elems
+            .iter()
             .map(|elem| self.distance(elem, pt))
             .filter_map(|f| f)
             .min_by(|x, y| x.total_cmp(y))
@@ -148,7 +147,7 @@ impl AntGrid {
         }
         return self.distance(
             &TeamElement {
-                element: TypeId::of::<Hive>(),
+                element: ElementType::Hive,
                 team: Some(*team),
             },
             pt,
@@ -185,7 +184,7 @@ impl AntGrid {
         }
         let ant = self.grid.get(coord).get_elem(&coord);
 
-        return ant.borrow().type_id() == TypeId::of::<Food>();
+        return ant.borrow().type_elem() == ElementType::Food;
     }
     pub fn is_hive_same_team(&self, coord: &Coord, team: Team) -> bool {
         if !self.grid.does_exist(coord) {
@@ -193,7 +192,11 @@ impl AntGrid {
         }
         let ant = self.grid.get(coord).get_elem(&coord);
         let elem = ant.borrow().team_element();
-        return elem.type_id() == TypeId::of::<Hive>() && elem.team == Some(team);
+        return elem
+            == TeamElement {
+                element: ElementType::Hive,
+                team: Some(team),
+            };
     }
     pub fn put_ant(&mut self, pos: Coord, team: &Team) {
         self.put(pos, Rc::new(RefCell::new(Ant::new(&pos, team))));
@@ -214,7 +217,8 @@ impl AntGrid {
             return;
         }
         self.grid.get_mut(&pos).elem = Some(elem.clone());
-        self.elements.insert(elem.borrow().team_element(), elem);
+        self.elements
+            .insert(elem.borrow().team_element(), elem.clone());
     }
     pub fn put_food(&mut self, pos: Coord) {
         let food = Rc::new(RefCell::new(Food::new(&pos)));

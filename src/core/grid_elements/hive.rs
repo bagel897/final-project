@@ -4,7 +4,7 @@ use colored::{Color, Colorize};
 use image::Rgb;
 use strum::IntoEnumIterator;
 
-use crate::core::{signals::SignalType, AntGrid, Coord, Dir, Team};
+use crate::core::{signals::SignalType, team_element::ElementType, AntGrid, Coord, Dir, Team};
 
 use super::grid_element::GridElement;
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -54,6 +54,9 @@ impl GridElement for Hive {
             SignalType::Deliver => self.food += 1,
             _ => {}
         };
+    }
+    fn type_elem(&self) -> ElementType {
+        ElementType::Hive
     }
 }
 impl Hive {

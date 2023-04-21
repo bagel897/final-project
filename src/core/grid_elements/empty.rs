@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use image::Rgb;
 
-use crate::core::{AntGrid, Coord};
+use crate::core::{team_element::ElementType, AntGrid, Coord};
 
 use super::grid_element::GridElement;
 #[derive(Debug)]
@@ -21,6 +21,9 @@ impl GridElement for Empty {
     }
     fn color(&self) -> Rgb<u8> {
         return Rgb::from([0, 0, 0]);
+    }
+    fn type_elem(&self) -> ElementType {
+        ElementType::Empty
     }
 }
 impl Empty {

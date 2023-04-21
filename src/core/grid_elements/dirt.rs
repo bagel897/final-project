@@ -1,8 +1,11 @@
-use std::{any::TypeId, fmt::Display};
+use std::fmt::Display;
 
 use image::Rgb;
 
-use crate::core::{team_element::TeamElement, AntGrid, Coord};
+use crate::core::{
+    team_element::{ElementType, TeamElement},
+    AntGrid, Coord,
+};
 
 use super::grid_element::GridElement;
 #[derive(Debug)]
@@ -22,6 +25,9 @@ impl GridElement for Dirt {
     fn color(&self) -> Rgb<u8> {
         return Rgb::from([255, 255, 255]);
     }
+    fn type_elem(&self) -> ElementType {
+        ElementType::Dirt
+    }
 }
 impl Dirt {
     pub fn new(pos: &Coord) -> Self {
@@ -33,7 +39,7 @@ impl Display for Dirt {
         write!(f, "x")
     }
 }
-// pub(super) const DIRT_ELEMENT: TeamElement = TeamElement {
-//     element: TypeId::of::<Dirt>(),
-//     team: None,
-// };
+pub(super) const DIRT_ELEMENT: TeamElement = TeamElement {
+    element: ElementType::Dirt,
+    team: None,
+};

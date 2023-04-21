@@ -1,4 +1,4 @@
-use crate::core::Team;
+use crate::core::{team_element::ElementType, Team};
 use std::{collections::VecDeque, fmt::Display};
 
 use colored::{Color, Colorize};
@@ -72,6 +72,9 @@ impl GridElement for Ant {
     }
     fn recv_signal(&mut self, signal: Signal) {
         self.signals.push_back(signal);
+    }
+    fn type_elem(&self) -> ElementType {
+        ElementType::Ant
     }
 }
 impl Display for Ant {
