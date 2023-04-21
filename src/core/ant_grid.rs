@@ -25,6 +25,7 @@ impl Default for Options {
     }
 }
 use super::{
+    grid::Export,
     grid_elements::food::FOOD_ELEMENT,
     signals::Signal,
     team_element::{ElementType, TeamElement},
@@ -97,7 +98,7 @@ impl AntGrid {
         if !self.grid.does_exist(coord) {
             return false;
         }
-        let ant = self.grid.get(coord).get_elem(&coord);
+        let ant = self.grid.get(coord).get_elem();
 
         return ant.borrow().type_elem() == ElementType::Food;
     }
@@ -105,7 +106,7 @@ impl AntGrid {
         if !self.grid.does_exist(coord) {
             return false;
         }
-        let ant = self.grid.get(coord).get_elem(&coord);
+        let ant = self.grid.get(coord).get_elem();
         let elem = ant.borrow().team_element();
         return elem
             == TeamElement {
@@ -230,8 +231,8 @@ impl AntGrid {
     pub fn cols(&self) -> usize {
         return self.grid.cols;
     }
-    pub fn export(&self) -> Grid {
-        return self.grid.clone();
+    pub fn export(&self) -> Export {
+        return self.grid.export();
     }
 }
 impl AntGrid {

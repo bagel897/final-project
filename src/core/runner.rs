@@ -7,7 +7,7 @@ use crate::core::{AntGrid, Coord, Team};
 
 use super::{
     ant_grid::Options,
-    grid::Grid,
+    grid::Export,
     grid_elements::{grid_element::GridElement, hive::Hive},
 };
 pub(crate) trait Runner {
@@ -16,7 +16,7 @@ pub(crate) trait Runner {
     fn run_dynamic(&mut self) -> usize;
     fn reset(&mut self);
     fn teams(&self) -> Vec<Team>;
-    fn export(&self) -> Grid;
+    fn export(&self) -> Export;
 }
 pub(crate) struct BaseRunner {
     pub grid: AntGrid,
@@ -51,7 +51,7 @@ impl Runner for BaseRunner {
     fn teams(&self) -> Vec<Team> {
         return self.teams.clone();
     }
-    fn export(&self) -> Grid {
+    fn export(&self) -> Export {
         return self.grid.export();
     }
 }

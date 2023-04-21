@@ -6,12 +6,10 @@ use crate::core::{team_element::ElementType, AntGrid, Coord};
 
 use super::grid_element::GridElement;
 #[derive(Debug)]
-pub(crate) struct Empty {
-    pos: Coord,
-}
+pub(crate) struct Empty {}
 impl GridElement for Empty {
     fn pos(&self) -> &Coord {
-        return &self.pos;
+        panic!();
     }
     fn exists(&self) -> bool {
         return false;
@@ -27,8 +25,8 @@ impl GridElement for Empty {
     }
 }
 impl Empty {
-    pub fn new(pos: &Coord) -> Self {
-        return Empty { pos: pos.clone() };
+    pub fn new() -> Self {
+        return Empty {};
     }
 }
 impl Display for Empty {

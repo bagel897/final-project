@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use super::{Cell, Coord};
+use super::{Cell, Coord, Export};
 #[derive(Clone)]
 pub(crate) struct Grid {
     pub grid: Vec<Vec<Cell>>,
@@ -32,11 +32,9 @@ impl Grid {
         }
         return true;
     }
-    pub fn iter(&self) -> GridIterator {
-        return GridIterator {
-            grid: self,
-            coord: Coord { x: 0, y: 0 },
-        };
+    pub fn export(&self) -> Export {
+        let data = self.grid.iter().map(|r| r.iter().map(|c|c.get_elem().borrow().color()).collect()).collect(); 
+        return Export::new(data, self.rows, self.cols);
     }
 }
 impl Display for Grid {
@@ -52,26 +50,5 @@ impl Display for Grid {
             write!(f, "\n")?;
         }
         Ok(())
-    }
-}
-pub(crate) struct GridIterator<'a> {
-    grid: &'a Grid,
-    coord: Coord,
-}
-impl<'a> Iterator for GridIterator<'a> {
-    type Item = (Coord, &'a Cell);
-    fn next(&mut self) -> Option<Self::Item> {
-        if !self.grid.does_exist(&self.coord) {
-            return None;
-        }
-        let c = self.coord.clone();
-        let res = self.grid.get(&self.coord);
-        if self.coord.x + 1 < self.grid.cols {
-            self.coord.x += 1;
-        } else {
-            self.coord.x = 0;
-            self.coord.y += 1;
-        }
-        return Some((c, res));
     }
 }

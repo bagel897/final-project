@@ -21,17 +21,17 @@ impl Cell {
             pheremones: None,
         };
     }
-    pub fn get_elem(&self, pos: &Coord) -> Rc<RefCell<dyn GridElement>> {
+    pub fn get_elem(&self) -> Rc<RefCell<dyn GridElement>> {
         return self
             .elem
             .clone()
-            .unwrap_or(Rc::new(RefCell::new(Empty::new(pos))));
+            .unwrap_or(Rc::new(RefCell::new(Empty::new())));
     }
 }
 impl Display for Cell {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.elem.clone() {
-            None => Empty::new(&Coord { x: 0, y: 0 }).fmt(f),
+            None => Empty::new().fmt(f),
             Some(i) => i.borrow().fmt(f),
         }
     }

@@ -11,7 +11,6 @@ enum SelectionMode {
     HIVE,
     FOOD,
 }
-use super::image_utils::get_image;
 struct Timer {
     frames: usize,
     start: Instant,
@@ -57,7 +56,7 @@ struct GUIrunner {
 impl GUIrunner {
     pub fn new(rows: usize, cols: usize, cc: &eframe::CreationContext<'_>) -> Self {
         let mut runner = BaseRunner::new(rows, cols);
-        let image = get_image(&runner.export());
+        let image = runner.export().to_image();
         let texture = cc
             .egui_ctx
             .load_texture("ants", image, TextureOptions::default());
@@ -178,7 +177,7 @@ impl eframe::App for GUIrunner {
             .frame(Frame::none())
             .show(&ctx, |ui| {
                 self.texture
-                    .set(get_image(&self.runner.export()), TextureOptions::default());
+                    .set(self.runner.export().to_image(), TextureOptions::default());
                 let rect = ui.available_size();
                 let y = rect.y as usize;
                 let x = rect.x as usize;
