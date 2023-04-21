@@ -13,6 +13,7 @@ pub(crate) struct Options {
     pub starting_food: usize,
     pub signal_radius: f64,
     pub max_pheremones: f64,
+    pub speed: usize,
 }
 impl Default for Options {
     fn default() -> Self {
@@ -22,6 +23,7 @@ impl Default for Options {
             starting_food: 10,
             signal_radius: 10.0,
             max_pheremones: 10.0,
+            speed: 20,
         };
     }
 }

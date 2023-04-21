@@ -67,11 +67,11 @@ impl Runner {
             }
         }
     }
-    pub fn run_dynamic(&mut self, num_rounds: usize) -> usize {
+    pub fn run_dynamic(&mut self) -> usize {
         puffin::profile_function!();
         let start = Instant::now();
         let mut n = 0;
-        while start.elapsed().as_millis() < (1000.0 / 60.0) as u128 && n < num_rounds {
+        while start.elapsed().as_millis() < (1000.0 / 60.0) as u128 && n < self.grid.options.speed {
             self.grid.run_round();
             n += 1;
         }

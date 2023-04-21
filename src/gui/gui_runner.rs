@@ -47,7 +47,6 @@ const DIRT_MODE: AddMode = AddMode {
 struct GUIrunner {
     runner: Runner,
     texture: TextureHandle,
-    speed: usize,
     rows: usize,
     cols: usize,
     timer: Timer,
@@ -65,7 +64,6 @@ impl GUIrunner {
         GUIrunner {
             runner,
             texture,
-            speed: 20,
             rows,
             cols,
             timer: Timer::new(),
@@ -124,7 +122,10 @@ impl eframe::App for GUIrunner {
         let _input = egui::RawInput::default();
         egui::SidePanel::right("Current Round Options").show(&ctx, |ui| {
             if ui
-                .add(egui::Slider::new(&mut self.speed, 1..=100).text("Rounds/frame"))
+                .add(
+                    egui::Slider::new(&mut self.runner.grid.options.speed, 1..=100)
+                        .text("Rounds/frame"),
+                )
                 .changed()
             {
                 self.timer_reset();
@@ -152,7 +153,6 @@ impl eframe::App for GUIrunner {
                 self.reset();
             }
             ui.checkbox(&mut self.profile, "Show profiler");
-            if ui.button("Profile").clicked() {}
             ui.radio_value(&mut self.add_mode, FOOD_MODE, "Add Food");
             ui.radio_value(&mut self.add_mode, DIRT_MODE, "Add Dirt");
             for team in self.runner.teams.iter() {
@@ -171,7 +171,7 @@ impl eframe::App for GUIrunner {
                 self.timer.fps()
             )))
         });
-        self.timer.tick(self.runner.run_dynamic(self.speed));
+        self.timer.tick(self.runner.run_dynamic());
         egui::Window::new("Ant Simulation")
             .collapsible(false)
             .title_bar(false)
