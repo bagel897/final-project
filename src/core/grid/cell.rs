@@ -1,5 +1,7 @@
 use std::{cell::RefCell, fmt::Display, rc::Rc};
 
+use image::Rgb;
+
 use crate::core::grid_elements::{empty::Empty, grid_element::GridElement};
 
 use super::Coord;
@@ -26,6 +28,18 @@ impl Cell {
             .elem
             .clone()
             .unwrap_or(Rc::new(RefCell::new(Empty::new())));
+    }
+    pub fn color(&self) -> Rgb<u8> {
+        match &self.elem {
+            Some(elem) => elem.borrow().color(),
+            None => {
+                if self.pheremones.is_some() {
+                    return Rgb([255, 255, 255]);
+                } else {
+                    return Rgb([0, 0, 0]);
+                }
+            }
+        }
     }
 }
 impl Display for Cell {

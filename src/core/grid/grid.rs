@@ -33,7 +33,11 @@ impl Grid {
         return true;
     }
     pub fn export(&self) -> Export {
-        let data = self.grid.iter().map(|r| r.iter().map(|c|c.get_elem().borrow().color()).collect()).collect(); 
+        let data = self
+            .grid
+            .iter()
+            .map(|r| r.iter().map(|c| c.color()).collect())
+            .collect();
         return Export::new(data, self.rows, self.cols);
     }
 }
