@@ -145,6 +145,9 @@ impl AntGrid {
             pt,
         );
     }
+    pub(super) fn get_pheremones(&mut self, pt: &Coord) -> Option<Coord> {
+        return self.grid.get(pt).pheremones;
+    }
 }
 impl AntGrid {
     pub fn new(rows: usize, cols: usize) -> Self {

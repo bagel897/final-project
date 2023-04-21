@@ -47,6 +47,10 @@ impl GridElement for Ant {
         self.init();
         let res = match self.state {
             State::Dead => None,
+            State::Food => match grid.get_pheremones(&self.pos) {
+                Some(i) => Some(i),
+                None => Some(self.a_star_find(grid)),
+            }
             _ => Some(self.a_star_find(grid)),
         };
         if res.is_some() && self.state == State::Carrying && self.pos != res.clone().unwrap() {
