@@ -4,6 +4,7 @@ mod grid_elements;
 pub mod runner;
 pub(crate) mod signals;
 mod team_element;
+mod thread_runner;
 pub(crate) use crate::core::ant_grid::AntGrid;
 pub(crate) use crate::core::grid::Grid;
 pub(crate) use crate::core::grid::{Coord, Dir, Team};

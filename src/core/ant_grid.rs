@@ -3,6 +3,7 @@ use rand::{distributions::Uniform, thread_rng, Rng};
 
 use crate::core::{grid::Grid, grid_elements::grid_element::GridElement, Coord, Team};
 use std::{cell::RefCell, collections::VecDeque, fmt::Display, rc::Rc};
+#[derive(Clone, Copy)]
 pub(crate) struct Options {
     pub pheremones_inc: f64,
     pub smell: f64,
@@ -196,7 +197,7 @@ impl AntGrid {
                 team: Some(team),
             };
     }
-    pub fn put<T: GridElement>(&mut self, elem: T) {
+    pub fn put<T: GridElement + 'static>(&mut self, elem: T) {
         let pos = elem.pos().clone();
         let elem_ref = Rc::new(RefCell::new(elem));
         if !self.grid.does_exist(&pos) {

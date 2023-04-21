@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use crate::core::{ant_grid::Options, BaseRunner, Coord, Hive, Runner, Team};
+use crate::core::{ant_grid::Options, BaseRunner, Coord, Dirt, Food, Hive, Runner, Team};
 use eframe::Renderer;
 use egui::{Frame, Image, Pos2, TextureHandle, TextureOptions, Vec2};
 use puffin;
@@ -45,7 +45,7 @@ const DIRT_MODE: AddMode = AddMode {
     selection_mode: SelectionMode::DIRT,
 };
 struct GUIrunner {
-    runner: Box<dyn Runner>,
+    runner: BaseRunner,
     texture: TextureHandle,
     rows: usize,
     cols: usize,
@@ -56,7 +56,7 @@ struct GUIrunner {
 }
 impl GUIrunner {
     pub fn new(rows: usize, cols: usize, cc: &eframe::CreationContext<'_>) -> Self {
-        let mut runner = Box::new(BaseRunner::new(rows, cols));
+        let mut runner = BaseRunner::new(rows, cols);
         let image = get_image(&runner.export());
         let texture = cc
             .egui_ctx
@@ -89,9 +89,9 @@ impl GUIrunner {
                 self.add_mode.team.unwrap(),
                 self.options.starting_food,
             )),
-            SelectionMode::FOOD => self.runner.put(Food::new(c)),
+            SelectionMode::FOOD => self.runner.put(Food::new(&c)),
             SelectionMode::DIRT => {
-                self.runner.put(Dirt::new(c));
+                self.runner.put(Dirt::new(&c));
                 // let mut bounds = [0, drag.x.round() as u32];
                 // bounds.sort();
                 // println!("{:?}", bounds);

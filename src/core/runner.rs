@@ -11,12 +11,10 @@ use super::{
     grid_elements::{grid_element::GridElement, hive::Hive},
 };
 pub(crate) trait Runner {
-    fn put<T: GridElement>(&mut self, elem: T)
-    where
-        Self: Sized;
+    fn put<T: GridElement + 'static>(&mut self, elem: T);
     fn set_opts(&mut self, options: Options);
     fn run_dynamic(&mut self) -> usize;
-    fn reset(&self);
+    fn reset(&mut self);
     fn teams(&self) -> Vec<Team>;
     fn export(&self) -> Grid;
 }
@@ -30,7 +28,7 @@ impl Runner for BaseRunner {
         self.grid.options = options;
     }
 
-    fn put<T: GridElement>(&mut self, elem: T) {
+    fn put<T: GridElement + 'static>(&mut self, elem: T) {
         self.grid.put(elem);
     }
 
@@ -44,14 +42,14 @@ impl Runner for BaseRunner {
         }
         return n;
     }
-    fn reset(&self) {
+    fn reset(&mut self) {
         let (rows, cols) = (self.grid.rows(), self.grid.cols());
         self.grid = AntGrid::new(rows, cols);
         self.teams.clear();
         self.default_setup();
     }
     fn teams(&self) -> Vec<Team> {
-        return self.teams;
+        return self.teams.clone();
     }
     fn export(&self) -> Grid {
         return self.grid.export();
