@@ -208,10 +208,11 @@ impl AntGrid {
             self.grid.get_mut(&c.unwrap()).elem = Some(ant);
         }
     }
-
     pub fn put<T: GridElement + 'static>(&mut self, elem: T) {
-        let pos = elem.pos().clone();
-        let elem_ref = Rc::new(RefCell::new(elem));
+        self.put_raw(Rc::new(RefCell::new(elem)));
+    }
+    pub fn put_raw(&mut self, elem_ref: Rc<RefCell<dyn GridElement>>) {
+        let pos = elem_ref.borrow().pos().clone();
         if !self.grid.does_exist(&pos) {
             return;
         }

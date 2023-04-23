@@ -154,9 +154,6 @@ impl eframe::App for GUIrunner {
             if ui.button("Reset grid").clicked() {
                 self.reset();
             }
-            if ui.button("Stop").clicked() {
-                self.runner.stop();
-            }
             ui.checkbox(&mut self.profile, "Show profiler");
             ui.radio_value(&mut self.add_mode, FOOD_MODE, "Add Food");
             ui.radio_value(&mut self.add_mode, DIRT_MODE, "Add Dirt");

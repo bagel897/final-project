@@ -8,7 +8,7 @@ use crate::core::{
 };
 
 use super::grid_element::GridElement;
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub(crate) struct Dirt {
     pos: Coord,
 }

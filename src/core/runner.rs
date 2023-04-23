@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::{cell::RefCell, rc::Rc, time::Instant};
 
 use image::Rgb;
 use rand::{thread_rng, Rng};
@@ -28,7 +28,7 @@ impl Runner for BaseRunner {
     }
 
     fn put<T: GridElement + 'static>(&mut self, elem: T) {
-        self.grid.put(elem);
+        self.put_raw(Rc::new(RefCell::new(elem)));
     }
 
     fn reset(&mut self) {
@@ -43,6 +43,9 @@ impl Runner for BaseRunner {
     }
 }
 impl BaseRunner {
+    pub fn put_raw(&mut self, elem: Rc<RefCell<dyn GridElement>>) {
+        self.grid.put_raw(elem);
+    }
     pub fn new(rows: usize, cols: usize) -> Self {
         let mut res = BaseRunner {
             grid: AntGrid::new(rows, cols),

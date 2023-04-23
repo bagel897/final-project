@@ -5,7 +5,7 @@ use image::Rgb;
 use crate::core::{team_element::ElementType, AntGrid, Coord};
 
 use super::grid_element::GridElement;
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub(crate) struct Empty {}
 impl GridElement for Empty {
     fn pos(&self) -> &Coord {

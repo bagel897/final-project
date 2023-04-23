@@ -9,7 +9,7 @@ use super::grid_element::GridElement;
 
 use ::colored::Colorize;
 use image::Rgb;
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub(crate) struct Food {
     pub pos: Coord,
 }

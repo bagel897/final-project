@@ -26,7 +26,7 @@ struct Targeted {
     coord: Coord,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct Ant {
     pos: Coord,
     state: State,
