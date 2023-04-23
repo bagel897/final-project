@@ -15,6 +15,7 @@ pub(crate) trait Runner {
     fn set_opts(&mut self, options: Options);
     fn reset(&mut self);
     fn export(&mut self) -> Export;
+    fn run(&mut self) {}
 }
 pub(crate) struct BaseRunner {
     pub grid: AntGrid,
@@ -40,6 +41,9 @@ impl Runner for BaseRunner {
     }
     fn export(&mut self) -> Export {
         return self.grid.export(self.frames, self.teams.clone());
+    }
+    fn run(&mut self) {
+        self.run_dynamic();
     }
 }
 impl BaseRunner {

@@ -48,8 +48,9 @@ const DIRT_MODE: AddMode = AddMode {
     team: None,
     selection_mode: SelectionMode::DIRT,
 };
+type RunnerMode = BaseRunner;
 struct GUIrunner {
-    runner: ThreadRunner,
+    runner: RunnerMode,
     texture: TextureHandle,
     rows: usize,
     cols: usize,
@@ -60,7 +61,7 @@ struct GUIrunner {
 }
 impl GUIrunner {
     pub fn new(rows: usize, cols: usize, cc: &eframe::CreationContext<'_>) -> Self {
-        let mut runner = ThreadRunner::new(rows, cols);
+        let mut runner = RunnerMode::new(rows, cols);
         let image = runner.export().to_image();
         let texture = cc
             .egui_ctx
@@ -123,6 +124,7 @@ impl GUIrunner {
 }
 impl eframe::App for GUIrunner {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        self.runner.run();
         let export = self.runner.export();
         puffin::GlobalProfiler::lock().new_frame();
         if self.profile {
