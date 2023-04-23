@@ -7,7 +7,6 @@ use tracing::{event, Level};
 
 use super::{
     ant_grid::Options, grid::Export, grid_elements::grid_element::GridElement, BaseRunner, Runner,
-    Team,
 };
 enum Command {
     RESET,
@@ -18,14 +17,11 @@ pub(crate) struct ThreadRunner {
     tx_opts: Sender<Options>,
     tx_command: Sender<Command>,
     rx_export: Receiver<Export>,
-    rx_team: Receiver<Vec<Team>>,
     last_expt: Export,
-    last_team: Vec<Team>,
 }
 struct RunnerHandle {
     runner: BaseRunner,
     tx_export: Sender<Export>,
-    tx_teams: Sender<Vec<Team>>,
     rx_opts: Receiver<Options>,
     rx_command: Receiver<Command>,
 }
@@ -34,7 +30,6 @@ impl RunnerHandle {
         runner: BaseRunner,
         tx_export: Sender<Export>,
         rx_opts: Receiver<Options>,
-        tx_teams: Sender<Vec<Team>>,
         rx_command: Receiver<Command>,
     ) -> Self {
         RunnerHandle {
@@ -42,7 +37,6 @@ impl RunnerHandle {
             tx_export,
             rx_opts,
             rx_command,
-            tx_teams,
         }
     }
     fn run(&mut self) {
@@ -62,9 +56,6 @@ impl RunnerHandle {
             self.runner.run_dynamic();
 
             if self.tx_export.send(self.runner.export()).is_err() {
-                break;
-            };
-            if self.tx_teams.send(self.runner.teams()).is_err() {
                 break;
             };
         }
@@ -87,40 +78,22 @@ impl Runner for ThreadRunner {
     fn reset(&mut self) {
         self.tx_command.send(Command::RESET);
     }
-    fn teams(&mut self) -> Vec<Team> {
-        match self.rx_team.try_recv() {
-            Ok(export) => self.last_team = export,
-            Err(_) => (),
-        }
-        return self.last_team.clone();
-    }
 }
 impl ThreadRunner {
     pub fn new(rows: usize, cols: usize) -> Self {
         let (tx_opts, rx_opts) = mpsc::channel();
-        let (tx_team, rx_team) = mpsc::channel();
         let (tx_command, rx_command) = mpsc::channel();
         let (tx_export, rx_export) = mpsc::channel();
         let handle = thread::spawn(move || {
-            RunnerHandle::new(
-                BaseRunner::new(rows, cols),
-                tx_export,
-                rx_opts,
-                tx_team,
-                rx_command,
-            )
-            .run();
+            RunnerHandle::new(BaseRunner::new(rows, cols), tx_export, rx_opts, rx_command).run();
         });
         let export = rx_export.recv().unwrap();
-        let team = rx_team.recv().unwrap();
         return ThreadRunner {
             handle,
             tx_opts,
             tx_command,
-            rx_team,
             rx_export,
             last_expt: export,
-            last_team: team,
         };
     }
     pub fn stop(&mut self) {

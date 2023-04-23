@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use super::{Cell, Coord, Export};
+use super::{Cell, Coord, Export, Team};
 #[derive(Clone)]
 pub(crate) struct Grid {
     pub grid: Vec<Vec<Cell>>,
@@ -32,13 +32,13 @@ impl Grid {
         }
         return true;
     }
-    pub fn export(&self) -> Export {
+    pub fn export(&self, frames: usize, teams: Vec<Team>) -> Export {
         let data = self
             .grid
             .iter()
             .map(|r| r.iter().map(|c| c.color()).collect())
             .collect();
-        return Export::new(data, self.rows, self.cols);
+        return Export::new(data, self.rows, self.cols, frames, teams);
     }
 }
 impl Display for Grid {

@@ -231,8 +231,8 @@ impl AntGrid {
     pub fn cols(&self) -> usize {
         return self.grid.cols;
     }
-    pub fn export(&self) -> Export {
-        return self.grid.export();
+    pub fn export(&self, frames: usize, teams: Vec<Team>) -> Export {
+        return self.grid.export(frames, teams);
     }
 }
 impl AntGrid {

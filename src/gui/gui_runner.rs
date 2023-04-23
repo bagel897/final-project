@@ -27,6 +27,9 @@ impl Timer {
     fn tick(&mut self, num_frames: usize) {
         self.frames += num_frames;
     }
+    fn set(&mut self, num_frames: usize) {
+        self.frames = num_frames;
+    }
     fn fps(&self) -> f64 {
         let time = self.start.elapsed().as_secs();
         return (self.frames as f64) / (time as f64);
@@ -120,6 +123,7 @@ impl GUIrunner {
 }
 impl eframe::App for GUIrunner {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        let export = self.runner.export();
         puffin::GlobalProfiler::lock().new_frame();
         if self.profile {
             puffin_egui::profiler_window(ctx);
@@ -156,7 +160,7 @@ impl eframe::App for GUIrunner {
             ui.checkbox(&mut self.profile, "Show profiler");
             ui.radio_value(&mut self.add_mode, FOOD_MODE, "Add Food");
             ui.radio_value(&mut self.add_mode, DIRT_MODE, "Add Dirt");
-            for team in self.runner.teams().iter() {
+            for team in export.teams().iter() {
                 ui.radio_value(
                     &mut self.add_mode,
                     AddMode {
@@ -172,9 +176,8 @@ impl eframe::App for GUIrunner {
                 self.timer.fps()
             )))
         });
-        let export = self.runner.export();
         self.runner.set_opts(self.options);
-        self.timer.tick(export.frames);
+        self.timer.set(export.frames());
         egui::Window::new("Ant Simulation")
             .collapsible(false)
             .title_bar(false)

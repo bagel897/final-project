@@ -14,13 +14,13 @@ pub(crate) trait Runner {
     fn put<T: GridElement + 'static>(&mut self, elem: T);
     fn set_opts(&mut self, options: Options);
     fn reset(&mut self);
-    fn teams(&mut self) -> Vec<Team>;
     fn export(&mut self) -> Export;
 }
 pub(crate) struct BaseRunner {
     pub grid: AntGrid,
     rng: rand::rngs::ThreadRng,
     pub(crate) teams: Vec<Team>,
+    frames: usize,
 }
 impl Runner for BaseRunner {
     fn set_opts(&mut self, options: Options) {
@@ -32,16 +32,14 @@ impl Runner for BaseRunner {
     }
 
     fn reset(&mut self) {
+        self.frames = 0;
         let (rows, cols) = (self.grid.rows(), self.grid.cols());
         self.grid = AntGrid::new(rows, cols);
         self.teams.clear();
         self.default_setup();
     }
-    fn teams(&mut self) -> Vec<Team> {
-        return self.teams.clone();
-    }
     fn export(&mut self) -> Export {
-        return self.grid.export();
+        return self.grid.export(self.frames, self.teams.clone());
     }
 }
 impl BaseRunner {
@@ -50,6 +48,7 @@ impl BaseRunner {
             grid: AntGrid::new(rows, cols),
             rng: thread_rng(),
             teams: Vec::new(),
+            frames: 0,
         };
         res.default_setup();
         return res;
@@ -76,10 +75,7 @@ impl BaseRunner {
         self.grid
             .put(Hive::new(rand, team, self.grid.options.starting_food));
     }
-    fn print(&self) {
-        println!("{}", self.grid);
-    }
-    pub(crate) fn run_dynamic(&mut self) -> usize {
+    pub(crate) fn run_dynamic(&mut self) {
         puffin::profile_function!();
         let start = Instant::now();
         let mut n = 0;
@@ -87,6 +83,6 @@ impl BaseRunner {
             self.grid.run_round();
             n += 1;
         }
-        return n;
+        self.frames += n;
     }
 }

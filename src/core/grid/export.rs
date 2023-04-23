@@ -1,21 +1,37 @@
 use egui::ColorImage;
 use image::{Pixel, Rgb};
 
+use super::Team;
+
 #[derive(Clone)]
 pub(crate) struct Export {
     colors: Vec<Vec<Rgb<u8>>>,
     rows: usize,
     cols: usize,
-    pub frames: usize,
+    frames: usize,
+    teams: Vec<Team>,
 }
 impl Export {
-    pub fn new(colors: Vec<Vec<Rgb<u8>>>, rows: usize, cols: usize) -> Self {
+    pub fn new(
+        colors: Vec<Vec<Rgb<u8>>>,
+        rows: usize,
+        cols: usize,
+        frames: usize,
+        teams: Vec<Team>,
+    ) -> Self {
         Export {
             colors,
             rows,
             cols,
-            frames: 0,
+            frames,
+            teams,
         }
+    }
+    pub(crate) fn frames(&self) -> usize {
+        return self.frames;
+    }
+    pub(crate) fn teams(&self) -> &Vec<Team> {
+        return &self.teams;
     }
     pub fn to_image(&self) -> ColorImage {
         const COLORS: usize = 4;
