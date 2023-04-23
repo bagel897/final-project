@@ -1,6 +1,8 @@
 use std::time::Instant;
 
-use crate::core::{ant_grid::Options, BaseRunner, Coord, Dirt, Food, Hive, Runner, Team};
+use crate::core::{
+    ant_grid::Options, BaseRunner, Coord, Dirt, Food, Hive, Runner, Team, ThreadRunner,
+};
 use eframe::Renderer;
 use egui::{Frame, Image, Pos2, TextureHandle, TextureOptions, Vec2};
 use puffin;
@@ -44,7 +46,7 @@ const DIRT_MODE: AddMode = AddMode {
     selection_mode: SelectionMode::DIRT,
 };
 struct GUIrunner {
-    runner: BaseRunner,
+    runner: ThreadRunner,
     texture: TextureHandle,
     rows: usize,
     cols: usize,
@@ -55,7 +57,7 @@ struct GUIrunner {
 }
 impl GUIrunner {
     pub fn new(rows: usize, cols: usize, cc: &eframe::CreationContext<'_>) -> Self {
-        let mut runner = BaseRunner::new(rows, cols);
+        let mut runner = ThreadRunner::new(rows, cols);
         let image = runner.export().to_image();
         let texture = cc
             .egui_ctx
@@ -148,6 +150,9 @@ impl eframe::App for GUIrunner {
             if ui.button("Reset grid").clicked() {
                 self.reset();
             }
+            if ui.button("Stop").clicked() {
+                self.runner.stop();
+            }
             ui.checkbox(&mut self.profile, "Show profiler");
             ui.radio_value(&mut self.add_mode, FOOD_MODE, "Add Food");
             ui.radio_value(&mut self.add_mode, DIRT_MODE, "Add Dirt");
@@ -167,8 +172,9 @@ impl eframe::App for GUIrunner {
                 self.timer.fps()
             )))
         });
+        let export = self.runner.export();
         self.runner.set_opts(self.options);
-        self.timer.tick(self.runner.run_dynamic());
+        self.timer.tick(export.frames);
         egui::Window::new("Ant Simulation")
             .collapsible(false)
             .title_bar(false)
@@ -177,7 +183,7 @@ impl eframe::App for GUIrunner {
             .frame(Frame::none())
             .show(&ctx, |ui| {
                 self.texture
-                    .set(self.runner.export().to_image(), TextureOptions::default());
+                    .set(export.to_image(), TextureOptions::default());
                 let rect = ui.available_size();
                 let y = rect.y as usize;
                 let x = rect.x as usize;

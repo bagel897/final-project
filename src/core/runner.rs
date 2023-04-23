@@ -13,10 +13,9 @@ use super::{
 pub(crate) trait Runner {
     fn put<T: GridElement + 'static>(&mut self, elem: T);
     fn set_opts(&mut self, options: Options);
-    fn run_dynamic(&mut self) -> usize;
     fn reset(&mut self);
-    fn teams(&self) -> Vec<Team>;
-    fn export(&self) -> Export;
+    fn teams(&mut self) -> Vec<Team>;
+    fn export(&mut self) -> Export;
 }
 pub(crate) struct BaseRunner {
     pub grid: AntGrid,
@@ -32,26 +31,16 @@ impl Runner for BaseRunner {
         self.grid.put(elem);
     }
 
-    fn run_dynamic(&mut self) -> usize {
-        puffin::profile_function!();
-        let start = Instant::now();
-        let mut n = 0;
-        while start.elapsed().as_millis() < (1000.0 / 60.0) as u128 && n < self.grid.options.speed {
-            self.grid.run_round();
-            n += 1;
-        }
-        return n;
-    }
     fn reset(&mut self) {
         let (rows, cols) = (self.grid.rows(), self.grid.cols());
         self.grid = AntGrid::new(rows, cols);
         self.teams.clear();
         self.default_setup();
     }
-    fn teams(&self) -> Vec<Team> {
+    fn teams(&mut self) -> Vec<Team> {
         return self.teams.clone();
     }
-    fn export(&self) -> Export {
+    fn export(&mut self) -> Export {
         return self.grid.export();
     }
 }
@@ -89,5 +78,15 @@ impl BaseRunner {
     }
     fn print(&self) {
         println!("{}", self.grid);
+    }
+    pub(crate) fn run_dynamic(&mut self) -> usize {
+        puffin::profile_function!();
+        let start = Instant::now();
+        let mut n = 0;
+        while start.elapsed().as_millis() < (1000.0 / 60.0) as u128 && n < self.grid.options.speed {
+            self.grid.run_round();
+            n += 1;
+        }
+        return n;
     }
 }
