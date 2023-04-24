@@ -4,7 +4,7 @@ use rand::{distributions::Uniform, thread_rng, Rng};
 use crate::core::{grid::Grid, grid_elements::grid_element::GridElement, Coord, Team};
 use std::{
     cell::RefCell,
-    collections::{HashMap, VecDeque},
+    collections::{VecDeque},
     fmt::Display,
     rc::Rc,
 };
@@ -206,7 +206,7 @@ impl AntGrid {
             .flatten()
             .collect();
         while !to_iter.is_empty() {
-            let (idx, ant) = to_iter.pop_front().unwrap();
+            let (_idx, ant) = to_iter.pop_front().unwrap();
             let old_pos = ant.borrow().pos().clone();
             self.grid.get_mut(&old_pos).elem = None;
             if !ant.borrow().is_removed() {

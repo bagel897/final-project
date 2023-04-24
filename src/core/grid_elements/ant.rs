@@ -74,7 +74,7 @@ impl GridElement for Ant {
         };
         if grid.is_dirt(&self.pos) {
             match &self.state {
-                State::Dirt { prev_state } => (),
+                State::Dirt { prev_state: _ } => (),
                 _ => {
                     self.state = State::Dirt {
                         prev_state: Box::new(self.state.clone()),
@@ -118,11 +118,11 @@ impl Display for Ant {
             State::Food => "s",
             State::Battle => "b",
             State::Targeted {
-                prev_state,
-                coord,
-                propogated,
+                prev_state: _,
+                coord: _,
+                propogated: _,
             } => "t",
-            State::Dirt { prev_state } => "i",
+            State::Dirt { prev_state: _ } => "i",
         };
         let color: Color = self.team.into();
         write!(f, "{}", state.color(color))
@@ -133,8 +133,8 @@ impl Ant {
         match &self.state {
             State::Targeted {
                 prev_state,
-                coord,
-                propogated,
+                coord: _,
+                propogated: _,
             } => *prev_state.clone(),
             _ => self.state.clone(),
         }
@@ -165,15 +165,15 @@ impl Ant {
                 }
                 match &self.state {
                     State::Targeted {
-                        prev_state,
-                        coord,
+                        prev_state: _,
+                        coord: _,
                         propogated,
                     } => {
                         if i.propogate <= *propogated {
                             return;
                         }
                     }
-                    State::Dirt { prev_state } => return,
+                    State::Dirt { prev_state: _ } => return,
                     _ => (),
                 }
                 self.state = State::Targeted {
@@ -247,7 +247,7 @@ impl Ant {
             State::Targeted {
                 prev_state,
                 coord,
-                propogated,
+                propogated: _,
             } => {
                 if pos == *coord {
                     self.state = *prev_state.clone();
@@ -326,9 +326,9 @@ impl Ant {
             State::Carrying => grid.distance_to_hive(&pos, &self.team)?,
             State::Battle => grid.distance_to_enemy(&pos, &self.team)?,
             State::Targeted {
-                prev_state,
+                prev_state: _,
                 coord,
-                propogated,
+                propogated: _,
             } => coord.distance(pos),
             _ => return None,
         };

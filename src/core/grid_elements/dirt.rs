@@ -3,7 +3,7 @@ use std::fmt::Display;
 use image::Rgb;
 
 use crate::core::{
-    team_element::{ElementType, TeamElement},
+    team_element::{ElementType},
     AntGrid, Coord,
 };
 

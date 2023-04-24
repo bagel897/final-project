@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use crate::core::{
-    ant_grid::Options, BaseRunner, Coord, Dirt, Food, Hive, Runner, Team, ThreadRunner,
+    ant_grid::Options, BaseRunner, Coord, Dirt, Food, Hive, Runner, Team,
 };
 use eframe::Renderer;
 use egui::{Frame, Image, Pos2, TextureHandle, TextureOptions, Vec2};
