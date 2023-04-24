@@ -49,9 +49,9 @@ impl GridElement for Ant {
     fn decide(&mut self, grid: &mut AntGrid) -> Coord {
         self.init();
         self.init_propogate = grid.options.propogation;
-        let res = match self.state {
+        let res = match &self.state {
             State::Dirt { prev_state } => {
-                self.state = *prev_state;
+                self.state = *prev_state.clone();
                 self.pos
             }
             // State::Food => {
@@ -73,11 +73,11 @@ impl GridElement for Ant {
             _ => self.a_star_find(grid),
         };
         if grid.is_dirt(&self.pos) {
-            match self.state {
+            match &self.state {
                 State::Dirt { prev_state } => (),
                 _ => {
                     self.state = State::Dirt {
-                        prev_state: Box::new(self.state),
+                        prev_state: Box::new(self.state.clone()),
                     };
                     grid.remove_dirt(&self.pos);
                 }
@@ -113,7 +113,7 @@ impl GridElement for Ant {
 }
 impl Display for Ant {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let state = match self.state {
+        let state = match &self.state {
             State::Carrying => "c",
             State::Food => "s",
             State::Battle => "b",
@@ -130,13 +130,13 @@ impl Display for Ant {
 }
 impl Ant {
     fn get_state(&self) -> State {
-        match self.state {
+        match &self.state {
             State::Targeted {
                 prev_state,
                 coord,
                 propogated,
-            } => *prev_state,
-            _ => self.state,
+            } => *prev_state.clone(),
+            _ => self.state.clone(),
         }
     }
     pub fn new(pos: &Coord, team: &Team) -> Self {
@@ -153,23 +153,23 @@ impl Ant {
         match self.signals.iter().max_by_key(|m| m.propogate) {
             None => return,
             Some(i) => {
-                let old_state = self.state;
+                let old_state = &self.state;
                 let process = match i.signal_type {
-                    SignalType::Carry => old_state == State::Carrying,
-                    SignalType::Food => old_state == State::Food,
-                    SignalType::Battle => old_state != State::Carrying,
+                    SignalType::Carry => *old_state == State::Carrying,
+                    SignalType::Food => *old_state == State::Food,
+                    SignalType::Battle => *old_state != State::Carrying,
                     _ => false,
                 };
                 if !process {
                     return;
                 }
-                match self.state {
+                match &self.state {
                     State::Targeted {
                         prev_state,
                         coord,
                         propogated,
                     } => {
-                        if i.propogate <= propogated {
+                        if i.propogate <= *propogated {
                             return;
                         }
                     }
@@ -177,7 +177,7 @@ impl Ant {
                     _ => (),
                 }
                 self.state = State::Targeted {
-                    prev_state: Box::new(old_state),
+                    prev_state: Box::new(old_state.clone()),
                     coord: i.coord,
                     propogated: i.propogate,
                 };
@@ -199,7 +199,7 @@ impl Ant {
         self.signals.clear();
     }
     fn run_action(&mut self, pos: Coord, grid: &mut AntGrid) -> bool {
-        match self.state {
+        match &self.state {
             State::Carrying => {
                 if grid.is_hive_same_team(&pos, self.team) {
                     grid.send_signal(
@@ -249,8 +249,8 @@ impl Ant {
                 coord,
                 propogated,
             } => {
-                if pos == coord {
-                    self.state = *prev_state;
+                if pos == *coord {
+                    self.state = *prev_state.clone();
                     return true;
                 }
                 return false;
@@ -321,7 +321,7 @@ impl Ant {
         );
     }
     fn get_dist(&self, pos: &Coord, grid: &mut AntGrid) -> Option<f64> {
-        let res = match self.state {
+        let res = match &self.state {
             State::Food => grid.distance_to_food(&pos)?,
             State::Carrying => grid.distance_to_hive(&pos, &self.team)?,
             State::Battle => grid.distance_to_enemy(&pos, &self.team)?,
