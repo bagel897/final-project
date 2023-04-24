@@ -12,20 +12,22 @@ use crate::core::{
 };
 
 use super::grid_element::GridElement;
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 enum State {
     Food,
     Battle,
     Carrying,
-    Targeted,
-    Dirt,
+    Targeted {
+        prev_state: Box<State>,
+        coord: Coord,
+        propogated: usize,
+    },
+    Dirt {
+        prev_state: Box<State>,
+    },
 }
 #[derive(Debug, Clone, Copy)]
-struct Targeted {
-    prev_state: State,
-    coord: Coord,
-    propogated: usize,
-}
+struct Targeted {}
 
 #[derive(Debug, Clone)]
 pub(crate) struct Ant {
@@ -34,8 +36,6 @@ pub(crate) struct Ant {
     team: Team,
     health: usize,
     signals: VecDeque<Signal>,
-    targeted: Option<Targeted>,
-    dirt_old_state: Option<State>,
     init_propogate: usize,
 }
 impl GridElement for Ant {
@@ -50,8 +50,8 @@ impl GridElement for Ant {
         self.init();
         self.init_propogate = grid.options.propogation;
         let res = match self.state {
-            State::Dirt => {
-                self.state = self.dirt_old_state.unwrap();
+            State::Dirt { prev_state } => {
+                self.state = *prev_state;
                 self.pos
             }
             // State::Food => {
@@ -72,10 +72,16 @@ impl GridElement for Ant {
             // }
             _ => self.a_star_find(grid),
         };
-        if grid.is_dirt(&self.pos) && self.state != State::Dirt {
-            self.dirt_old_state = Some(self.state);
-            self.state = State::Dirt;
-            grid.remove_dirt(&self.pos);
+        if grid.is_dirt(&self.pos) {
+            match self.state {
+                State::Dirt { prev_state } => (),
+                _ => {
+                    self.state = State::Dirt {
+                        prev_state: Box::new(self.state),
+                    };
+                    grid.remove_dirt(&self.pos);
+                }
+            }
         }
         // if res.is_some() && self.get_state() == State::Carrying && self.pos != old_pos {
         //     grid.put_pheremones(self.pos, old_pos, self.team);
@@ -111,8 +117,12 @@ impl Display for Ant {
             State::Carrying => "c",
             State::Food => "s",
             State::Battle => "b",
-            State::Targeted => "t",
-            State::Dirt => "i",
+            State::Targeted {
+                prev_state,
+                coord,
+                propogated,
+            } => "t",
+            State::Dirt { prev_state } => "i",
         };
         let color: Color = self.team.into();
         write!(f, "{}", state.color(color))
@@ -120,10 +130,14 @@ impl Display for Ant {
 }
 impl Ant {
     fn get_state(&self) -> State {
-        if self.state == State::Targeted {
-            return self.targeted.unwrap().prev_state;
+        match self.state {
+            State::Targeted {
+                prev_state,
+                coord,
+                propogated,
+            } => *prev_state,
+            _ => self.state,
         }
-        return self.state;
     }
     pub fn new(pos: &Coord, team: &Team) -> Self {
         return Ant {
@@ -132,8 +146,6 @@ impl Ant {
             team: team.clone(),
             health: team.health,
             signals: VecDeque::new(),
-            targeted: None,
-            dirt_old_state: None,
             init_propogate: 0,
         };
     }
@@ -147,21 +159,28 @@ impl Ant {
                     SignalType::Food => old_state == State::Food,
                     SignalType::Battle => old_state != State::Carrying,
                     _ => false,
-                } && old_state != State::Dirt;
+                };
                 if !process {
                     return;
                 }
-                if self.targeted.is_some() {
-                    if i.propogate <= self.targeted.unwrap().propogated {
-                        return;
+                match self.state {
+                    State::Targeted {
+                        prev_state,
+                        coord,
+                        propogated,
+                    } => {
+                        if i.propogate <= propogated {
+                            return;
+                        }
                     }
+                    State::Dirt { prev_state } => return,
+                    _ => (),
                 }
-                self.targeted = Some(Targeted {
-                    prev_state: old_state,
+                self.state = State::Targeted {
+                    prev_state: Box::new(old_state),
                     coord: i.coord,
                     propogated: i.propogate,
-                });
-                self.state = State::Targeted;
+                };
             }
         };
     }
@@ -225,12 +244,13 @@ impl Ant {
                 }
                 return false;
             }
-            State::Targeted => {
-                assert!(self.targeted.is_some());
-                let target = self.targeted.unwrap();
-                if pos == target.coord {
-                    self.state = target.prev_state;
-                    self.targeted = None;
+            State::Targeted {
+                prev_state,
+                coord,
+                propogated,
+            } => {
+                if pos == coord {
+                    self.state = *prev_state;
                     return true;
                 }
                 return false;
@@ -305,7 +325,11 @@ impl Ant {
             State::Food => grid.distance_to_food(&pos)?,
             State::Carrying => grid.distance_to_hive(&pos, &self.team)?,
             State::Battle => grid.distance_to_enemy(&pos, &self.team)?,
-            State::Targeted => self.targeted?.coord.distance(pos),
+            State::Targeted {
+                prev_state,
+                coord,
+                propogated,
+            } => coord.distance(pos),
             _ => return None,
         };
         return Some(res);
