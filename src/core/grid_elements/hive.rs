@@ -27,10 +27,7 @@ impl GridElement for Hive {
     fn attacked(&mut self, damage: usize) {
         self.health = self.health.checked_sub(damage).unwrap_or(0);
     }
-    fn decide(&mut self, grid: &mut AntGrid) -> Option<Coord> {
-        if self.health == 0 {
-            return None;
-        }
+    fn decide(&mut self, grid: &mut AntGrid) -> Coord {
         for dir in Dir::iter() {
             let next = self.pos.next_cell(&dir);
             if next.is_some() {
@@ -44,7 +41,7 @@ impl GridElement for Hive {
                 }
             }
         }
-        return Some(self.pos);
+        self.pos
     }
     fn color(&self) -> Rgb<u8> {
         return self.team.color;
@@ -57,6 +54,9 @@ impl GridElement for Hive {
     }
     fn type_elem(&self) -> ElementType {
         ElementType::Hive
+    }
+    fn is_removed(&self) -> bool {
+        return self.health == 0;
     }
 }
 impl Hive {

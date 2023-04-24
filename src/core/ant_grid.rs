@@ -2,7 +2,12 @@ use multimap::MultiMap;
 use rand::{distributions::Uniform, thread_rng, Rng};
 
 use crate::core::{grid::Grid, grid_elements::grid_element::GridElement, Coord, Team};
-use std::{cell::RefCell, collections::VecDeque, fmt::Display, rc::Rc};
+use std::{
+    cell::RefCell,
+    collections::{HashMap, VecDeque},
+    fmt::Display,
+    rc::Rc,
+};
 #[derive(Clone, Copy)]
 pub(crate) struct Options {
     pub pheremones_inc: f64,
@@ -10,6 +15,7 @@ pub(crate) struct Options {
     pub starting_food: usize,
     pub signal_radius: f64,
     pub max_pheremones: f64,
+    pub dirt_penalty: f64,
     pub speed: usize,
     pub propogation: usize,
 }
@@ -23,6 +29,7 @@ impl Default for Options {
             max_pheremones: 10.0,
             speed: 20,
             propogation: 3,
+            dirt_penalty: 1.2,
         };
     }
 }
@@ -80,6 +87,21 @@ impl AntGrid {
         let ant = self.grid.get(coord).elem.clone().unwrap();
         let mut other_entity = ant.borrow_mut();
         other_entity.attacked(1);
+    }
+    pub(super) fn remove_dirt(&self, coord: &Coord) {
+        assert!(self.is_dirt(coord));
+        let ant = self.grid.get(coord).elem.clone().unwrap();
+        let mut other_entity = ant.borrow_mut();
+        other_entity.attacked(1);
+    }
+    pub(super) fn is_dirt(&self, coord: &Coord) -> bool {
+        if !self.grid.does_exist(coord) {
+            return false;
+        }
+        return self.grid.get(coord).elem.clone().map_or(false, |f| {
+            f.try_borrow()
+                .map_or(false, |g| g.type_elem() == ElementType::Dirt)
+        });
     }
     pub(super) fn is_enemy(&self, coord: &Coord, team: &Team) -> bool {
         if !self.grid.does_exist(coord) {
@@ -162,23 +184,6 @@ impl AntGrid {
         }
     }
 
-    fn run_decide(&mut self) {
-        let mut to_iter: VecDeque<Rc<RefCell<dyn GridElement>>> = self
-            .elements
-            .flat_iter_mut()
-            .map(|(_, v)| v.to_owned())
-            .collect();
-        while !to_iter.is_empty() {
-            let ant = to_iter.pop_front().unwrap();
-            let old_pos = ant.borrow().pos().clone();
-            let c = ant.borrow_mut().decide(self);
-            self.grid.get_mut(&old_pos).elem = None;
-            if c.is_none() {
-                continue;
-            }
-            self.grid.get_mut(&c.unwrap()).elem = Some(ant.clone());
-        }
-    }
     pub fn run_round(&mut self) {
         let mut to_iter: VecDeque<(usize, Rc<RefCell<dyn GridElement>>)> = self
             .elements
@@ -198,16 +203,20 @@ impl AntGrid {
         while !to_iter.is_empty() {
             let (idx, ant) = to_iter.pop_front().unwrap();
             let old_pos = ant.borrow().pos().clone();
-            let c = ant.borrow_mut().decide(self);
             self.grid.get_mut(&old_pos).elem = None;
-            if c.is_none() {
-                self.elements
-                    .get_vec_mut(&ant.borrow().team_element())
-                    .unwrap()
-                    .remove(idx);
-                continue;
+            if !ant.borrow().is_removed() {
+                let c = ant.borrow_mut().decide(self);
+                if !ant.borrow().is_removed() {
+                    self.grid.get_mut(&c).elem = Some(ant);
+                }
             }
-            self.grid.get_mut(&c.unwrap()).elem = Some(ant);
+        }
+        let keys: Vec<TeamElement> = self.elements.keys().map(|f| f.to_owned()).collect();
+        for key in keys {
+            self.elements
+                .get_vec_mut(&key)
+                .unwrap()
+                .drain_filter(|f| f.borrow().is_removed());
         }
     }
     pub fn put<T: GridElement + 'static>(&mut self, elem: T) {
@@ -249,6 +258,10 @@ impl AntGrid {
         if self.is_blocked(pt) {
             return None;
         }
+        let dirt_factor = match self.is_dirt(pt) {
+            true => self.options.dirt_penalty,
+            false => 1.0,
+        };
         return Some(
             self.adjust(
                 self.elements
@@ -257,7 +270,7 @@ impl AntGrid {
                     .filter_map(|f| f.try_borrow().ok())
                     .map(|f| pt.distance(&f.pos()))
                     .min_by(|x, y| x.total_cmp(y))?,
-            ),
+            ) * dirt_factor,
         );
     }
 }

@@ -17,8 +17,8 @@ enum State {
     Food,
     Battle,
     Carrying,
-    Dead,
     Targeted,
+    Dirt,
 }
 #[derive(Debug, Clone, Copy)]
 struct Targeted {
@@ -35,6 +35,7 @@ pub(crate) struct Ant {
     health: usize,
     signals: VecDeque<Signal>,
     targeted: Option<Targeted>,
+    dirt_old_state: Option<State>,
     init_propogate: usize,
 }
 impl GridElement for Ant {
@@ -45,11 +46,14 @@ impl GridElement for Ant {
         return true;
     }
 
-    fn decide(&mut self, grid: &mut AntGrid) -> Option<Coord> {
+    fn decide(&mut self, grid: &mut AntGrid) -> Coord {
         self.init();
         self.init_propogate = grid.options.propogation;
         let res = match self.state {
-            State::Dead => None,
+            State::Dirt => {
+                self.state = self.dirt_old_state.unwrap();
+                self.pos
+            }
             // State::Food => {
             //     let p = grid.get_pheremones(&self.pos);
             //     if p.is_some() {
@@ -66,8 +70,13 @@ impl GridElement for Ant {
             //     }
             //     return Some(self.a_star_find(grid));
             // }
-            _ => Some(self.a_star_find(grid)),
+            _ => self.a_star_find(grid),
         };
+        if grid.is_dirt(&self.pos) && self.state != State::Dirt {
+            self.dirt_old_state = Some(self.state);
+            self.state = State::Dirt;
+            grid.remove_dirt(&self.pos);
+        }
         // if res.is_some() && self.get_state() == State::Carrying && self.pos != old_pos {
         //     grid.put_pheremones(self.pos, old_pos, self.team);
         // }
@@ -78,10 +87,7 @@ impl GridElement for Ant {
         Some(self.team)
     }
     fn attacked(&mut self, damage: usize) {
-        match self.health.checked_sub(damage) {
-            None => self.state = State::Dead,
-            Some(i) => self.health = i,
-        }
+        self.health = self.health.checked_sub(damage).unwrap_or(0);
         if self.get_state() == State::Food {
             self.state = State::Battle;
         }
@@ -95,6 +101,9 @@ impl GridElement for Ant {
     fn type_elem(&self) -> ElementType {
         ElementType::Ant
     }
+    fn is_removed(&self) -> bool {
+        return self.health == 0;
+    }
 }
 impl Display for Ant {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -102,8 +111,8 @@ impl Display for Ant {
             State::Carrying => "c",
             State::Food => "s",
             State::Battle => "b",
-            State::Dead => "d",
             State::Targeted => "t",
+            State::Dirt => "i",
         };
         let color: Color = self.team.into();
         write!(f, "{}", state.color(color))
@@ -124,6 +133,7 @@ impl Ant {
             health: team.health,
             signals: VecDeque::new(),
             targeted: None,
+            dirt_old_state: None,
             init_propogate: 0,
         };
     }
@@ -137,7 +147,7 @@ impl Ant {
                     SignalType::Food => old_state == State::Food,
                     SignalType::Battle => old_state != State::Carrying,
                     _ => false,
-                } && old_state != State::Dead;
+                } && old_state != State::Dirt;
                 if !process {
                     return;
                 }

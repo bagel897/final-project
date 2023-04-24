@@ -1,3 +1,4 @@
+#![feature(drain_filter)]
 use std::env;
 
 use gui::gui_runner::run_gui;
@@ -13,5 +14,5 @@ fn main() -> Result<(), eframe::Error> {
         Ok(())
     } else {
         run_gui(500, 1000)
-    }
+    };
 }

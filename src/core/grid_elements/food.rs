@@ -20,14 +20,17 @@ impl GridElement for Food {
     fn exists(&self) -> bool {
         return true;
     }
-    fn decide(&mut self, _grid: &mut AntGrid) -> Option<Coord> {
-        return Some(self.pos);
+    fn decide(&mut self, _grid: &mut AntGrid) -> Coord {
+        self.pos
     }
     fn color(&self) -> Rgb<u8> {
         return Rgb::from([0, 255, 0]);
     }
     fn type_elem(&self) -> ElementType {
         ElementType::Food
+    }
+    fn is_removed(&self) -> bool {
+        return false;
     }
 }
 impl Food {

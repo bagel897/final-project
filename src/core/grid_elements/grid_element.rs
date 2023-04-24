@@ -15,7 +15,7 @@ use crate::core::{
 pub(crate) trait GridElement: Debug + Display + Send {
     fn pos(&self) -> &Coord;
     fn exists(&self) -> bool;
-    fn decide(&mut self, grid: &mut AntGrid) -> Option<Coord>;
+    fn decide(&mut self, grid: &mut AntGrid) -> Coord;
     fn team(&self) -> Option<Team> {
         None
     }
@@ -29,6 +29,9 @@ pub(crate) trait GridElement: Debug + Display + Send {
     fn attacked(&mut self, _damage: usize) {}
     fn color(&self) -> Rgb<u8>;
     fn recv_signal(&mut self, _signal: Signal) {}
+    fn is_removed(&self) -> bool {
+        return false;
+    }
 }
 impl<T: GridElement + 'static> IntoHelper for T {
     fn to_refcell(self: Box<Self>) -> Rc<RefCell<dyn GridElement>> {

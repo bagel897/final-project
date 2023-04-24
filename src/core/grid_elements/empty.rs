@@ -14,14 +14,17 @@ impl GridElement for Empty {
     fn exists(&self) -> bool {
         return false;
     }
-    fn decide(&mut self, _grid: &mut AntGrid) -> Option<Coord> {
-        return None;
+    fn decide(&mut self, _grid: &mut AntGrid) -> Coord {
+        panic!();
     }
     fn color(&self) -> Rgb<u8> {
         return Rgb::from([0, 0, 0]);
     }
     fn type_elem(&self) -> ElementType {
         ElementType::Empty
+    }
+    fn is_removed(&self) -> bool {
+        return true;
     }
 }
 impl Empty {
