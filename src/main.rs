@@ -8,10 +8,10 @@ mod tui;
 
 fn main() -> Result<(), eframe::Error> {
     let args: Vec<String> = env::args().collect();
-    if args.len() > 0 && args.get(1).map_or(false, |f| f == "--tui") {
+    return if args.len() > 0 && args.get(1).map_or(false, |f| f == "--tui") {
         run_tui();
-        return Ok(());
+        Ok(())
     } else {
-        return run_gui(500, 1000);
+        run_gui(500, 1000)
     }
 }
