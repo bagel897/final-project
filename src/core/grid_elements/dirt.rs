@@ -23,7 +23,7 @@ impl GridElement for Dirt {
         return Some(self.pos);
     }
     fn color(&self) -> Rgb<u8> {
-        return Rgb::from([255, 255, 255]);
+        return Rgb::from([139, 69, 19]);
     }
     fn type_elem(&self) -> ElementType {
         ElementType::Dirt

@@ -61,7 +61,8 @@ struct GUIrunner {
 }
 impl GUIrunner {
     pub fn new(rows: usize, cols: usize, cc: &eframe::CreationContext<'_>) -> Self {
-        let mut runner = RunnerMode::new(rows, cols);
+        let options = Options::default();
+        let mut runner = RunnerMode::new(rows, cols, options);
         let image = runner.export().to_image();
         let texture = cc
             .egui_ctx
@@ -74,10 +75,11 @@ impl GUIrunner {
             timer: Timer::new(),
             add_mode: FOOD_MODE,
             profile: false,
-            options: Options::default(),
+            options,
         }
     }
     fn reset(&mut self) {
+        self.runner.set_opts(self.options);
         self.runner.reset();
         self.timer_reset();
     }
@@ -150,6 +152,8 @@ impl eframe::App for GUIrunner {
                 egui::Slider::new(&mut self.options.pheremones_inc, 0.0..=1000.0)
                     .text("pheremones"),
             );
+            ui.add(egui::Slider::new(&mut self.options.propogation, 0..=10).text("propogation"));
+
             // if ui.button("Add food (random)").clicked() {
             //     self.runner.put_food(1);
             // }

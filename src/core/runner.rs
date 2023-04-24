@@ -9,6 +9,7 @@ use super::{
     ant_grid::Options,
     grid::Export,
     grid_elements::{grid_element::GridElement, hive::Hive},
+    Dirt,
 };
 pub(crate) trait Runner {
     fn put<T: GridElement + 'static>(&mut self, elem: T);
@@ -50,13 +51,14 @@ impl BaseRunner {
     pub fn put_raw(&mut self, elem: Rc<RefCell<dyn GridElement>>) {
         self.grid.put_raw(elem);
     }
-    pub fn new(rows: usize, cols: usize) -> Self {
+    pub fn new(rows: usize, cols: usize, options: Options) -> Self {
         let mut res = BaseRunner {
             grid: AntGrid::new(rows, cols),
             rng: thread_rng(),
             teams: Vec::new(),
             frames: 0,
         };
+        res.set_opts(options);
         res.default_setup();
         return res;
     }
@@ -64,6 +66,10 @@ impl BaseRunner {
         self.put_team(Rgb([255, 0, 0]), "Red");
         self.put_team(Rgb([255, 0, 255]), "Purple");
         self.put_team(Rgb([255, 255, 0]), "Yellow");
+        for _ in 0..(self.grid.rows() * self.grid.cols() / 2) {
+            let c = self.rand_coord();
+            self.grid.put(Dirt::new(&c));
+        }
     }
     fn rand_coord(&mut self) -> Coord {
         let x = self.rng.gen_range(0..self.grid.cols());

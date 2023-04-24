@@ -73,14 +73,14 @@ impl Runner for ThreadRunner {
     }
 }
 impl ThreadRunner {
-    pub fn new(rows: usize, cols: usize) -> Self {
+    pub fn new(rows: usize, cols: usize, options: Options) -> Self {
         let (tx_opts, rx_opts) = mpsc::channel();
         let (tx_command, rx_command) = mpsc::channel();
         let (tx_elem, rx_elem) = mpsc::channel();
         let (tx_export, rx_export) = mpsc::channel();
         let handle = thread::spawn(move || {
             RunnerHandle {
-                runner: BaseRunner::new(rows, cols),
+                runner: BaseRunner::new(rows, cols, options),
                 tx_export,
                 rx_opts,
                 rx_command,

@@ -24,6 +24,7 @@ enum State {
 struct Targeted {
     prev_state: State,
     coord: Coord,
+    propogated: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -34,6 +35,7 @@ pub(crate) struct Ant {
     health: usize,
     signals: VecDeque<Signal>,
     targeted: Option<Targeted>,
+    init_propogate: usize,
 }
 impl GridElement for Ant {
     fn pos(&self) -> &Coord {
@@ -45,26 +47,30 @@ impl GridElement for Ant {
 
     fn decide(&mut self, grid: &mut AntGrid) -> Option<Coord> {
         self.init();
-        let old_pos = self.pos.clone();
+        self.init_propogate = grid.options.propogation;
         let res = match self.state {
             State::Dead => None,
-            State::Food => {
-                let p = grid.get_pheremones(&self.pos);
-                if p.is_some() {
-                    let (dest, team) = p.unwrap();
-                    assert!(dest != self.pos);
-                    if team == self.team && !grid.is_blocked(&dest) {
-                        self.pos = dest;
-                        return Some(dest);
-                    }
-                }
-                return Some(self.a_star_find(grid));
-            }
+            // State::Food => {
+            //     let p = grid.get_pheremones(&self.pos);
+            //     if p.is_some() {
+            //         let (dest, team) = p.unwrap();
+            //         assert!(dest != self.pos);
+            //         if team == self.team && !grid.is_blocked(&dest) {
+            //             println!("Moving along trail! (before) {:?}", self.pos);
+            //             self.pos = dest;
+            //             println!("Moving along trail! (after) {:?}", self.pos);
+            //             return Some(dest);
+            //         } else {
+            //             println!("Can't follow trail");
+            //         }
+            //     }
+            //     return Some(self.a_star_find(grid));
+            // }
             _ => Some(self.a_star_find(grid)),
         };
-        if res.is_some() && self.state == State::Carrying && self.pos != old_pos {
-            grid.put_pheremones(self.pos, old_pos, self.team);
-        }
+        // if res.is_some() && self.get_state() == State::Carrying && self.pos != old_pos {
+        //     grid.put_pheremones(self.pos, old_pos, self.team);
+        // }
         self.cleanup(grid);
         res
     }
@@ -76,7 +82,7 @@ impl GridElement for Ant {
             None => self.state = State::Dead,
             Some(i) => self.health = i,
         }
-        if self.state == State::Food {
+        if self.get_state() == State::Food {
             self.state = State::Battle;
         }
     }
@@ -104,6 +110,12 @@ impl Display for Ant {
     }
 }
 impl Ant {
+    fn get_state(&self) -> State {
+        if self.state == State::Targeted {
+            return self.targeted.unwrap().prev_state;
+        }
+        return self.state;
+    }
     pub fn new(pos: &Coord, team: &Team) -> Self {
         return Ant {
             pos: pos.clone(),
@@ -112,38 +124,47 @@ impl Ant {
             health: team.health,
             signals: VecDeque::new(),
             targeted: None,
+            init_propogate: 0,
         };
     }
     fn init(&mut self) {
-        match self.signals.front() {
+        match self.signals.iter().max_by_key(|m| m.propogate) {
             None => return,
             Some(i) => {
                 let old_state = self.state;
                 let process = match i.signal_type {
                     SignalType::Carry => old_state == State::Carrying,
                     SignalType::Food => old_state == State::Food,
-                    SignalType::Battle => {
-                        old_state != State::Carrying && old_state != State::Targeted
-                    }
+                    SignalType::Battle => old_state != State::Carrying,
                     _ => false,
                 } && old_state != State::Dead;
                 if !process {
                     return;
                 }
+                if self.targeted.is_some() {
+                    if i.propogate <= self.targeted.unwrap().propogated {
+                        return;
+                    }
+                }
                 self.targeted = Some(Targeted {
                     prev_state: old_state,
                     coord: i.coord,
+                    propogated: i.propogate,
                 });
                 self.state = State::Targeted;
             }
         };
     }
     fn cleanup(&mut self, grid: &mut AntGrid) {
-        for signal in self.signals.iter() {
-            if signal.propogate != 0 {
-                let mut new_sig = signal.clone();
-                new_sig.propogate = signal.propogate - 1;
-                grid.send_signal(&self.pos, new_sig, self.team_element());
+        match self.signals.iter().max_by_key(|m| m.propogate) {
+            None => (),
+            Some(signal) => {
+                if signal.propogate != 0 {
+                    let mut new_sig = signal.clone();
+                    new_sig.propogate = signal.propogate.checked_sub(1).unwrap();
+                    new_sig.coord = self.pos;
+                    grid.send_signal(&self.pos, new_sig, self.team_element());
+                }
             }
         }
         self.signals.clear();
@@ -237,7 +258,7 @@ impl Ant {
             Signal {
                 coord: pos,
                 signal_type: SignalType::Carry,
-                propogate: 1,
+                propogate: self.init_propogate,
             },
             self.team_element(),
         );
@@ -249,7 +270,7 @@ impl Ant {
                 Signal {
                     coord,
                     signal_type: SignalType::Battle,
-                    propogate: 0,
+                    propogate: self.init_propogate,
                 },
                 self.team_element(),
             );
@@ -264,7 +285,7 @@ impl Ant {
             Signal {
                 coord: pos,
                 signal_type: SignalType::Food,
-                propogate: 1,
+                propogate: self.init_propogate,
             },
             self.team_element(),
         );
