@@ -30,7 +30,6 @@ impl GridElement for Dirt {
         ElementType::Dirt
     }
     fn attacked(&mut self, _damage: usize) {
-        println!("Removed!");
         self.removed = true;
     }
     fn is_removed(&self) -> bool {

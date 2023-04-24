@@ -188,6 +188,11 @@ impl AntGrid {
         let mut to_iter: VecDeque<(usize, Rc<RefCell<dyn GridElement>>)> = self
             .elements
             .keys()
+            .filter(|e| {
+                e.element != ElementType::Dirt
+                    && e.element != ElementType::Empty
+                    && e.element != ElementType::Food
+            })
             .map(|t| t.clone())
             .map(|k| {
                 self.elements
