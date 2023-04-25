@@ -65,6 +65,12 @@ impl AntGrid {
         let mut other_entity = ant.borrow_mut();
         other_entity.attacked(1);
     }
+    pub(super) fn eat_food(&self, coord: &Coord) {
+        assert!(self.is_food(coord));
+        let ant = self.grid.get(coord).elem.clone().unwrap();
+        let mut other_entity = ant.borrow_mut();
+        other_entity.attacked(1);
+    }
     pub(super) fn remove_dirt(&self, coord: &Coord) {
         assert!(self.is_dirt(coord));
         let ant = self.grid.get(coord).elem.clone().unwrap();

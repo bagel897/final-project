@@ -214,6 +214,7 @@ impl Ant {
                     return true;
                 }
                 if grid.is_food(&pos) {
+                    grid.eat_food(&pos);
                     self.send_food_signal(grid, pos);
                     self.state = Carrying { pheromones: 0 };
                     return true;
