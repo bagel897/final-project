@@ -59,23 +59,32 @@ impl AntGrid {
             }
         }
     }
-    pub(super) fn attack(&self, coord: &Coord, team: &Team) {
+    pub(super) fn attack(&mut self, coord: &Coord, team: &Team) {
         assert!(self.is_enemy(coord, team));
+        self.damage(coord);
+    }
+
+    fn damage(&mut self, coord: &Coord) {
         let ant = self.grid.get(coord).elem.clone().unwrap();
         let mut other_entity = ant.borrow_mut();
         other_entity.attacked(1);
+        if other_entity.is_removed() {
+            self.grid.get_mut(other_entity.pos()).elem = None;
+            let team_elem = other_entity.team_element();
+            drop(other_entity);
+            self.elements
+                .get_vec_mut(&team_elem)
+                .unwrap()
+                .drain_filter(|e| e.borrow().is_removed());
+        }
     }
-    pub(super) fn eat_food(&self, coord: &Coord) {
+    pub(super) fn eat_food(&mut self, coord: &Coord) {
         assert!(self.is_food(coord));
-        let ant = self.grid.get(coord).elem.clone().unwrap();
-        let mut other_entity = ant.borrow_mut();
-        other_entity.attacked(1);
+        self.damage(coord);
     }
-    pub(super) fn remove_dirt(&self, coord: &Coord) {
+    pub(super) fn remove_dirt(&mut self, coord: &Coord) {
         assert!(self.is_dirt(coord));
-        let ant = self.grid.get(coord).elem.clone().unwrap();
-        let mut other_entity = ant.borrow_mut();
-        other_entity.attacked(1);
+        self.damage(coord);
     }
     pub(super) fn is_dirt(&self, coord: &Coord) -> bool {
         if !self.grid.does_exist(coord) {
@@ -155,16 +164,37 @@ impl AntGrid {
     }
     pub(super) fn get_pheromones(&self, pt: &Coord, team: Team, state_bool: bool) -> usize {
         let key = (team, state_bool);
-        let pheremones = self.grid.get(pt).pheromones.get(&key);
-        match pheremones {
+        let pheromones = self.grid.get(pt).pheromones.get(&key);
+        match pheromones {
             None => usize::MAX,
-            Some((pheremones, round)) => {
+            Some((pheromones, round)) => {
                 if (self.round_num - round) > self.options.decay {
                     usize::MAX
                 } else {
-                    *pheremones
+                    *pheromones
                 }
             }
+        }
+    }
+    pub(super) fn put_pheromones(
+        &mut self,
+        pos: Coord,
+        new_val: usize,
+        team: &Team,
+        state_bool: bool,
+    ) {
+        let old_val = self
+            .grid
+            .get_mut(&pos)
+            .pheromones
+            .get(&(team.clone(), state_bool))
+            .map(|(a, b)| a)
+            .unwrap_or(&usize::MAX);
+        if new_val < *old_val {
+            self.grid
+                .get_mut(&pos)
+                .pheromones
+                .insert((team.clone(), state_bool), (new_val, self.round_num));
         }
     }
 }
@@ -235,21 +265,7 @@ impl AntGrid {
         self.elements
             .insert(elem_ref.borrow().team_element(), elem_ref.clone());
     }
-    pub fn put_pheromones(&mut self, pos: Coord, new_val: usize, team: &Team, state_bool: bool) {
-        let old_val = self
-            .grid
-            .get_mut(&pos)
-            .pheromones
-            .get(&(team.clone(), state_bool))
-            .map(|(a, b)| a)
-            .unwrap_or(&usize::MAX);
-        if new_val < *old_val {
-            self.grid
-                .get_mut(&pos)
-                .pheromones
-                .insert((team.clone(), state_bool), (new_val, self.round_num));
-        }
-    }
+
     pub fn rows(&self) -> usize {
         return self.grid.rows;
     }

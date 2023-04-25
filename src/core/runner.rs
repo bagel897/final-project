@@ -10,7 +10,7 @@ use crate::core::{AntGrid, Coord, Team};
 use super::{
     grid::Export,
     grid_elements::{grid_element::GridElement, hive::Hive},
-    Dirt,
+    Dirt, Food,
 };
 pub(crate) trait Runner {
     fn put<T: GridElement + 'static>(&mut self, elem: T);
@@ -65,9 +65,13 @@ impl BaseRunner {
         self.put_team(Rgb([255, 0, 0]), "Red");
         self.put_team(Rgb([255, 0, 255]), "Purple");
         self.put_team(Rgb([255, 255, 0]), "Yellow");
-        for _ in 0..(self.grid.rows() * self.grid.cols() / 2) {
+        for _ in 0..((self.grid.rows() * self.grid.cols()) / 2) {
             let c = self.rand_coord();
             self.grid.put(Dirt::new(&c));
+        }
+        for _ in 0..((self.grid.rows() * self.grid.cols()) / 100) {
+            let c = self.rand_coord();
+            self.grid.put(Food::new(&c));
         }
     }
     fn rand_coord(&mut self) -> Coord {

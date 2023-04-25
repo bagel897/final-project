@@ -10,6 +10,8 @@ use crate::core::{
 
 use super::grid_element::GridElement;
 
+const STARTING_FOOD: usize = 10;
+
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct Food {
     pub pos: Coord,
@@ -30,10 +32,11 @@ impl GridElement for Food {
         ElementType::Food
     }
     fn attacked(&mut self, damage: usize) {
+        assert!(!self.is_removed());
         self.food = self.food.saturating_sub(damage);
     }
     fn color(&self) -> Rgb<u8> {
-        return Rgb::from([0, 255, 0]);
+        return Rgb::from([0, 255 * (self.food / STARTING_FOOD) as u8, 0]);
     }
     fn is_removed(&self) -> bool {
         return self.food == 0;
@@ -44,7 +47,7 @@ impl Food {
     pub fn new(pos: &Coord) -> Self {
         return Food {
             pos: pos.clone(),
-            food: 10,
+            food: STARTING_FOOD,
         };
     }
 }
