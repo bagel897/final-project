@@ -172,8 +172,8 @@ impl AntGrid {
             pt,
         );
     }
-    pub(super) fn get_pheremones(&mut self, pt: &Coord, team: &Team) -> Option<&f64> {
-        return self.grid.get(pt).pheremones.get(team);
+    pub(super) fn get_pheremones(&self, pt: &Coord, team: &Team) -> f64 {
+        return *self.grid.get(pt).pheremones.get(team).unwrap_or(&0.0);
     }
 }
 

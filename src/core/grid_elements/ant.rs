@@ -1,6 +1,7 @@
 use std::{collections::VecDeque, fmt::Display};
 
 use colored::{Color, Colorize};
+use egui::pos2;
 use image::Rgb;
 use strum::IntoEnumIterator;
 
@@ -262,15 +263,16 @@ impl Ant {
             _ => false,
         }
     }
-    fn get_pheremones(&mut self, grid: &mut AntGrid) -> Option<Coord> {
+    fn get_pheremones(&mut self, grid: &AntGrid) -> Option<Coord> {
         return Dir::iter()
             .filter_map(|d| self.pos.next_cell(&d))
-            .filter_map(|pos| {
-                grid.get_pheremones(&pos, &self.team)
-                    .map(|f| (pos.clone(), f.clone()))
+            .filter(|p| !grid.is_blocked(p))
+            .map(|pos| {
+                let f = grid.get_pheremones(&pos, &self.team);
+                (pos.clone(), f)
             })
-            .min_by(|(_, p1), (_, p2)| p1.partial_cmp(p2).unwrap())
-            .filter(|(_, p)| *p > 1.0)
+            .filter(|(_, p)| *p > grid.get_pheremones(self.pos(), &self.team))
+            .max_by(|(_, p1), (_, p2)| p1.partial_cmp(p2).unwrap())
             .map(|(pos, _)| pos);
     }
     fn a_star_find(&mut self, grid: &mut AntGrid) -> Coord {
