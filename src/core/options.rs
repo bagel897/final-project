@@ -5,7 +5,7 @@ pub(crate) struct Options {
     pub signal_radius: f64,
     pub dirt_penalty: f64,
     pub speed: usize,
-    pub propogation: usize,
+    pub propagation: usize,
 }
 
 impl Default for Options {
@@ -15,7 +15,7 @@ impl Default for Options {
             starting_food: 10,
             signal_radius: 2.0,
             speed: 20,
-            propogation: 3,
+            propagation: 3,
             dirt_penalty: 1.2,
         };
     }

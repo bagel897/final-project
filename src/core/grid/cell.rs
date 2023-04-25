@@ -9,7 +9,7 @@ use super::Team;
 #[derive(Clone)]
 pub(crate) struct Cell {
     pub elem: Option<Rc<RefCell<dyn GridElement>>>,
-    pub pheremones: HashMap<(Team, bool), usize>,
+    pub pheromones: HashMap<(Team, bool), usize>,
 }
 
 impl Default for Cell {
@@ -22,7 +22,7 @@ impl Cell {
     fn new() -> Self {
         return Cell {
             elem: None,
-            pheremones: HashMap::new(),
+            pheromones: HashMap::new(),
         };
     }
     pub fn get_elem(&self) -> Rc<RefCell<dyn GridElement>> {
@@ -35,7 +35,7 @@ impl Cell {
         match &self.elem {
             Some(elem) => elem.borrow().color(),
             None => {
-                return if self.pheremones.len() > 0 {
+                return if self.pheromones.len() > 0 {
                     Rgb([10, 10, 10])
                 } else {
                     Rgb([0, 0, 0])

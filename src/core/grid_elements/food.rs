@@ -23,11 +23,11 @@ impl GridElement for Food {
     fn decide(&mut self, _grid: &mut AntGrid) -> Coord {
         self.pos
     }
-    fn color(&self) -> Rgb<u8> {
-        return Rgb::from([0, 255, 0]);
-    }
     fn type_elem(&self) -> ElementType {
         ElementType::Food
+    }
+    fn color(&self) -> Rgb<u8> {
+        return Rgb::from([0, 255, 0]);
     }
     fn is_removed(&self) -> bool {
         return false;

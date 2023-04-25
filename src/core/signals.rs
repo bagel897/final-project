@@ -11,5 +11,5 @@ pub(crate) enum SignalType {
 pub(crate) struct Signal {
     pub coord: Coord,
     pub signal_type: SignalType,
-    pub propogate: usize,
+    pub propagate: usize,
 }

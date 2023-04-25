@@ -25,12 +25,12 @@ pub(crate) struct BaseRunner {
     frames: usize,
 }
 impl Runner for BaseRunner {
-    fn set_opts(&mut self, options: Options) {
-        self.grid.options = options;
-    }
-
     fn put<T: GridElement + 'static>(&mut self, elem: T) {
         self.put_raw(Rc::new(RefCell::new(elem)));
+    }
+
+    fn set_opts(&mut self, options: Options) {
+        self.grid.options = options;
     }
 
     fn reset(&mut self) {

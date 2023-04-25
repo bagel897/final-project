@@ -150,7 +150,7 @@ impl AntGrid {
         return *self
             .grid
             .get(pt)
-            .pheremones
+            .pheromones
             .get(&(team, state_bool))
             .unwrap_or(&usize::MAX);
     }
@@ -220,17 +220,17 @@ impl AntGrid {
         self.elements
             .insert(elem_ref.borrow().team_element(), elem_ref.clone());
     }
-    pub fn put_pheremones(&mut self, pos: Coord, val: usize, team: &Team, state_bool: bool) {
+    pub fn put_pheromones(&mut self, pos: Coord, val: usize, team: &Team, state_bool: bool) {
         let old_val = self
             .grid
             .get_mut(&pos)
-            .pheremones
+            .pheromones
             .get(&(team.clone(), state_bool))
             .unwrap_or(&usize::MAX);
         let new_val = usize::min(*old_val, val);
         self.grid
             .get_mut(&pos)
-            .pheremones
+            .pheromones
             .insert((team.clone(), state_bool), new_val);
     }
     pub fn rows(&self) -> usize {

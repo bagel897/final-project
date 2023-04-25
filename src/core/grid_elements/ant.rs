@@ -35,14 +35,14 @@ impl GridElement for Ant {
 
     fn decide(&mut self, grid: &mut AntGrid) -> Coord {
         self.init();
-        self.init_propagate = grid.options.propogation;
+        self.init_propagate = grid.options.propagation;
         let res = match &self.state {
             State::Dirt { prev_state } => {
                 self.state = *prev_state.clone();
                 self.pos
             }
             Food { pheromones } => {
-                grid.put_pheremones(self.pos, *pheromones + 1, &self.team, self.state.get_bool());
+                grid.put_pheromones(self.pos, *pheromones + 1, &self.team, self.state.get_bool());
                 self.state = Food {
                     pheromones: pheromones + 1,
                 };
@@ -50,7 +50,7 @@ impl GridElement for Ant {
                     .unwrap_or(self.a_star_find(grid))
             }
             Carrying { pheromones } => {
-                grid.put_pheremones(self.pos, *pheromones + 1, &self.team, self.state.get_bool());
+                grid.put_pheromones(self.pos, *pheromones + 1, &self.team, self.state.get_bool());
                 self.state = Carrying {
                     pheromones: pheromones + 1,
                 };
@@ -137,7 +137,7 @@ impl Ant {
         };
     }
     fn init(&mut self) {
-        match self.signals.iter().max_by_key(|m| m.propogate) {
+        match self.signals.iter().max_by_key(|m| m.propagate) {
             None => return,
             Some(i) => {
                 let old_state = &self.state;
@@ -147,7 +147,7 @@ impl Ant {
                     propagated,
                 } = &self.state
                 {
-                    if i.propogate <= *propagated {
+                    if i.propagate <= *propagated {
                         return;
                     }
                 }
@@ -167,18 +167,18 @@ impl Ant {
                 self.state = State::Targeted {
                     prev_state: Box::new(old_state.clone()),
                     coord: i.coord,
-                    propagated: i.propogate,
+                    propagated: i.propagate,
                 };
             }
         };
     }
     fn cleanup(&mut self, grid: &mut AntGrid) {
-        match self.signals.iter().max_by_key(|m| m.propogate) {
+        match self.signals.iter().max_by_key(|m| m.propagate) {
             None => (),
             Some(signal) => {
-                if signal.propogate != 0 {
+                if signal.propagate != 0 {
                     let mut new_sig = signal.clone();
-                    new_sig.propogate = signal.propogate.checked_sub(1).unwrap();
+                    new_sig.propagate = signal.propagate.checked_sub(1).unwrap();
                     new_sig.coord = self.pos;
                     grid.send_signal(&self.pos, new_sig, self.team_element());
                 }
@@ -197,7 +197,7 @@ impl Ant {
                         Signal {
                             coord: pos,
                             signal_type: SignalType::Deliver,
-                            propogate: 0,
+                            propagate: 0,
                         },
                         self.team_element(),
                     );
@@ -227,7 +227,7 @@ impl Ant {
                         Signal {
                             coord: pos,
                             signal_type: SignalType::Battle,
-                            propogate: 0,
+                            propagate: 0,
                         },
                         self.team_element(),
                     );
@@ -293,7 +293,7 @@ impl Ant {
             Signal {
                 coord: pos,
                 signal_type: SignalType::Carry,
-                propogate: self.init_propagate,
+                propagate: self.init_propagate,
             },
             self.team_element(),
         );
@@ -305,7 +305,7 @@ impl Ant {
                 Signal {
                     coord,
                     signal_type: SignalType::Battle,
-                    propogate: self.init_propagate,
+                    propagate: self.init_propagate,
                 },
                 self.team_element(),
             );
@@ -320,7 +320,7 @@ impl Ant {
             Signal {
                 coord: pos,
                 signal_type: SignalType::Food,
-                propogate: self.init_propagate,
+                propagate: self.init_propagate,
             },
             self.team_element(),
         );

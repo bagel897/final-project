@@ -148,7 +148,7 @@ impl eframe::App for GUIrunner {
             ui.add(
                 egui::Slider::new(&mut self.options.starting_food, 1..=100).text("Starting Food"),
             );
-            ui.add(egui::Slider::new(&mut self.options.propogation, 0..=10).text("propogation"));
+            ui.add(egui::Slider::new(&mut self.options.propagation, 0..=10).text("propogation"));
 
             // if ui.button("Add food (random)").clicked() {
             //     self.runner.put_food(1);

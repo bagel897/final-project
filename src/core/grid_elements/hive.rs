@@ -18,14 +18,8 @@ impl GridElement for Hive {
     fn pos(&self) -> &Coord {
         return &self.pos;
     }
-    fn team(&self) -> Option<Team> {
-        return Some(self.team);
-    }
     fn exists(&self) -> bool {
         return true;
-    }
-    fn attacked(&mut self, damage: usize) {
-        self.health = self.health.checked_sub(damage).unwrap_or(0);
     }
     fn decide(&mut self, grid: &mut AntGrid) -> Coord {
         for dir in Dir::iter() {
@@ -43,6 +37,15 @@ impl GridElement for Hive {
         }
         self.pos
     }
+    fn team(&self) -> Option<Team> {
+        return Some(self.team);
+    }
+    fn type_elem(&self) -> ElementType {
+        ElementType::Hive
+    }
+    fn attacked(&mut self, damage: usize) {
+        self.health = self.health.checked_sub(damage).unwrap_or(0);
+    }
     fn color(&self) -> Rgb<u8> {
         return self.team.color;
     }
@@ -51,9 +54,6 @@ impl GridElement for Hive {
             SignalType::Deliver => self.food += 1,
             _ => {}
         };
-    }
-    fn type_elem(&self) -> ElementType {
-        ElementType::Hive
     }
     fn is_removed(&self) -> bool {
         return self.health == 0;

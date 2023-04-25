@@ -17,11 +17,11 @@ impl GridElement for Empty {
     fn decide(&mut self, _grid: &mut AntGrid) -> Coord {
         panic!();
     }
-    fn color(&self) -> Rgb<u8> {
-        return Rgb::from([0, 0, 0]);
-    }
     fn type_elem(&self) -> ElementType {
         ElementType::Empty
+    }
+    fn color(&self) -> Rgb<u8> {
+        return Rgb::from([0, 0, 0]);
     }
     fn is_removed(&self) -> bool {
         return true;

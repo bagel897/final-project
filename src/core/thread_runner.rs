@@ -56,8 +56,18 @@ impl RunnerHandle {
     }
 }
 impl Runner for ThreadRunner {
+    fn put<T: GridElement + 'static>(&mut self, elem: T) {
+        self.tx_elem
+            .send(Box::new(elem))
+            .expect("TODO: panic message");
+    }
     fn set_opts(&mut self, options: Options) {
         self.tx_opts.send(options).expect("TODO: panic message");
+    }
+    fn reset(&mut self) {
+        self.tx_command
+            .send(Command::RESET)
+            .expect("TODO: panic message");
     }
     fn export(&mut self) -> Export {
         match self.rx_export.recv() {
@@ -65,16 +75,6 @@ impl Runner for ThreadRunner {
             Err(err) => event!(Level::WARN, "Error {:#?}", err),
         }
         return self.last_expt.clone();
-    }
-    fn reset(&mut self) {
-        self.tx_command
-            .send(Command::RESET)
-            .expect("TODO: panic message");
-    }
-    fn put<T: GridElement + 'static>(&mut self, elem: T) {
-        self.tx_elem
-            .send(Box::new(elem))
-            .expect("TODO: panic message");
     }
 }
 impl ThreadRunner {

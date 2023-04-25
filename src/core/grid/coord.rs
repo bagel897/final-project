@@ -17,37 +17,33 @@ impl Coord {
             .sqrt();
     }
     pub fn next_cell(&self, dir: &Dir) -> Option<Coord> {
-        match dir {
-            Dir::UP => {
-                return Some(Coord {
-                    x: self.x,
-                    y: self.y + 1,
-                })
-            }
-            Dir::LEFT => {
-                return Some(Coord {
-                    x: self.x + 1,
-                    y: self.y,
-                })
-            }
+        return match dir {
+            Dir::UP => Some(Coord {
+                x: self.x,
+                y: self.y + 1,
+            }),
+            Dir::LEFT => Some(Coord {
+                x: self.x + 1,
+                y: self.y,
+            }),
             Dir::DOWN => {
                 if self.y == 0 {
                     return None;
                 }
-                return Some(Coord {
+                Some(Coord {
                     x: self.x,
                     y: self.y - 1,
-                });
+                })
             }
             Dir::RIGHT => {
                 if self.x == 0 {
                     return None;
                 }
-                return Some(Coord {
+                Some(Coord {
                     x: self.x - 1,
                     y: self.y,
-                });
+                })
             }
-        }
+        };
     }
 }
