@@ -6,6 +6,7 @@ pub(crate) struct Options {
     pub dirt_penalty: f64,
     pub speed: usize,
     pub propagation: usize,
+    pub decay: usize,
 }
 
 impl Default for Options {
@@ -17,6 +18,7 @@ impl Default for Options {
             speed: 20,
             propagation: 3,
             dirt_penalty: 1.2,
+            decay: 200,
         };
     }
 }

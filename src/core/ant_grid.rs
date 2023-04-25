@@ -18,6 +18,7 @@ use super::{
 pub(crate) struct AntGrid {
     grid: Grid,
     elements: MultiMap<TeamElement, Rc<RefCell<dyn GridElement>>>,
+    round_num: usize,
     pub options: Options,
 }
 
@@ -147,12 +148,18 @@ impl AntGrid {
         );
     }
     pub(super) fn get_pheromones(&self, pt: &Coord, team: Team, state_bool: bool) -> usize {
-        return *self
-            .grid
-            .get(pt)
-            .pheromones
-            .get(&(team, state_bool))
-            .unwrap_or(&usize::MAX);
+        let key = (team, state_bool);
+        let pheremones = self.grid.get(pt).pheromones.get(&key);
+        match pheremones {
+            None => usize::MAX,
+            Some((pheremones, round)) => {
+                if (self.round_num - round) > self.options.decay {
+                    usize::MAX
+                } else {
+                    *pheremones
+                }
+            }
+        }
     }
 }
 
@@ -162,6 +169,7 @@ impl AntGrid {
             grid: Grid::new(rows, cols),
             elements: MultiMap::new(),
             options: Options::default(),
+            round_num: 0,
         }
     }
 
@@ -204,6 +212,7 @@ impl AntGrid {
                 .unwrap()
                 .drain_filter(|f| f.borrow().is_removed());
         }
+        self.round_num += 1;
     }
     pub fn put<T: GridElement + 'static>(&mut self, elem: T) {
         self.put_raw(Rc::new(RefCell::new(elem)));
@@ -220,18 +229,20 @@ impl AntGrid {
         self.elements
             .insert(elem_ref.borrow().team_element(), elem_ref.clone());
     }
-    pub fn put_pheromones(&mut self, pos: Coord, val: usize, team: &Team, state_bool: bool) {
+    pub fn put_pheromones(&mut self, pos: Coord, new_val: usize, team: &Team, state_bool: bool) {
         let old_val = self
             .grid
             .get_mut(&pos)
             .pheromones
             .get(&(team.clone(), state_bool))
+            .map(|(a, b)| a)
             .unwrap_or(&usize::MAX);
-        let new_val = usize::min(*old_val, val);
-        self.grid
-            .get_mut(&pos)
-            .pheromones
-            .insert((team.clone(), state_bool), new_val);
+        if new_val < *old_val {
+            self.grid
+                .get_mut(&pos)
+                .pheromones
+                .insert((team.clone(), state_bool), (new_val, self.round_num));
+        }
     }
     pub fn rows(&self) -> usize {
         return self.grid.rows;

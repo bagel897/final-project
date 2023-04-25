@@ -9,7 +9,7 @@ use super::Team;
 #[derive(Clone)]
 pub(crate) struct Cell {
     pub elem: Option<Rc<RefCell<dyn GridElement>>>,
-    pub pheromones: HashMap<(Team, bool), usize>,
+    pub pheromones: HashMap<(Team, bool), (usize, usize)>,
 }
 
 impl Default for Cell {
