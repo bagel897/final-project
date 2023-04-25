@@ -259,7 +259,7 @@ impl Ant {
                 (pos.clone(), f)
             })
             .filter(|(_, p)| {
-                *p > grid.get_pheromones(self.pos(), self.team, !self.state.get_bool())
+                *p < grid.get_pheromones(self.pos(), self.team, !self.state.get_bool())
             })
             .min_by_key(|(_, p)| *p)
             .map(|(pos, _)| pos);
