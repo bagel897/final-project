@@ -1,4 +1,6 @@
-use crate::core::{ant_grid::Options, BaseRunner};
+use crate::core::BaseRunner;
+use crate::core::Options;
+
 pub(crate) fn run_tui() {
     let _num_ants = 0;
     let _num_food = 4;

@@ -6,16 +6,6 @@ pub(crate) enum Dir {
     DOWN,
     RIGHT,
 }
-impl Dir {
-    pub fn turn(&self) -> Self {
-        match *self {
-            Dir::UP => Dir::LEFT,
-            Dir::LEFT => Dir::DOWN,
-            Dir::DOWN => Dir::RIGHT,
-            Dir::RIGHT => Dir::UP,
-        }
-    }
-}
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy, Ord, PartialOrd)]
 pub(crate) struct Coord {
     pub x: usize,

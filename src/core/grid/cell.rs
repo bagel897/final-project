@@ -9,7 +9,7 @@ use super::Team;
 #[derive(Clone)]
 pub(crate) struct Cell {
     pub elem: Option<Rc<RefCell<dyn GridElement>>>,
-    pub pheremones: HashMap<Team, f64>,
+    pub pheremones: HashMap<(Team, bool), usize>,
 }
 
 impl Default for Cell {
@@ -34,11 +34,13 @@ impl Cell {
     pub fn color(&self) -> Rgb<u8> {
         match &self.elem {
             Some(elem) => elem.borrow().color(),
-            None => return if self.pheremones.len() > 0 {
-                Rgb([10, 10, 10])
-            } else {
-                Rgb([0, 0, 0])
-            },
+            None => {
+                return if self.pheremones.len() > 0 {
+                    Rgb([10, 10, 10])
+                } else {
+                    Rgb([0, 0, 0])
+                }
+            }
         }
     }
 }

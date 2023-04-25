@@ -5,6 +5,7 @@ use rand::distributions::Uniform;
 use rand::rngs::SmallRng;
 use rand::{Rng, SeedableRng};
 
+use crate::core::options::Options;
 use crate::core::{grid::Grid, grid_elements::grid_element::GridElement, Coord, Team};
 
 use super::{
@@ -13,33 +14,6 @@ use super::{
     signals::Signal,
     team_element::{ElementType, TeamElement},
 };
-
-#[derive(Clone, Copy)]
-pub(crate) struct Options {
-    pub pheremones_inc: f64,
-    pub smell: f64,
-    pub starting_food: usize,
-    pub signal_radius: f64,
-    pub max_pheremones: f64,
-    pub dirt_penalty: f64,
-    pub speed: usize,
-    pub propogation: usize,
-}
-
-impl Default for Options {
-    fn default() -> Self {
-        return Options {
-            pheremones_inc: 1.0,
-            smell: 0.5,
-            starting_food: 10,
-            signal_radius: 2.0,
-            max_pheremones: 10.0,
-            speed: 20,
-            propogation: 3,
-            dirt_penalty: 1.2,
-        };
-    }
-}
 
 pub(crate) struct AntGrid {
     grid: Grid,
@@ -172,8 +146,13 @@ impl AntGrid {
             pt,
         );
     }
-    pub(super) fn get_pheremones(&self, pt: &Coord, team: &Team) -> f64 {
-        return *self.grid.get(pt).pheremones.get(team).unwrap_or(&0.0);
+    pub(super) fn get_pheromones(&self, pt: &Coord, team: Team, state_bool: bool) -> usize {
+        return *self
+            .grid
+            .get(pt)
+            .pheremones
+            .get(&(team, state_bool))
+            .unwrap_or(&usize::MAX);
     }
 }
 
@@ -241,15 +220,18 @@ impl AntGrid {
         self.elements
             .insert(elem_ref.borrow().team_element(), elem_ref.clone());
     }
-    pub fn put_pheremones(&mut self, pos: Coord, val: f64, team: Team) {
+    pub fn put_pheremones(&mut self, pos: Coord, val: usize, team: &Team, state_bool: bool) {
         let old_val = self
             .grid
             .get_mut(&pos)
             .pheremones
-            .get(&team)
-            .unwrap_or(&0.0);
-        let new_val = f64::max(*old_val, val);
-        self.grid.get_mut(&pos).pheremones.insert(team, new_val);
+            .get(&(team.clone(), state_bool))
+            .unwrap_or(&usize::MAX);
+        let new_val = usize::min(*old_val, val);
+        self.grid
+            .get_mut(&pos)
+            .pheremones
+            .insert((team.clone(), state_bool), new_val);
     }
     pub fn rows(&self) -> usize {
         return self.grid.rows;

@@ -4,10 +4,10 @@ use image::Rgb;
 use rand::rngs::SmallRng;
 use rand::{Rng, SeedableRng};
 
+use crate::core::options::Options;
 use crate::core::{AntGrid, Coord, Team};
 
 use super::{
-    ant_grid::Options,
     grid::Export,
     grid_elements::{grid_element::GridElement, hive::Hive},
     Dirt,

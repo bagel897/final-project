@@ -1,12 +1,12 @@
 use std::time::Instant;
 
-use crate::core::{
-    ant_grid::Options, BaseRunner, Coord, Dirt, Food, Hive, Runner, Team,
-};
+use crate::core::Options;
+use crate::core::{BaseRunner, Coord, Dirt, Food, Hive, Runner, Team};
 use eframe::Renderer;
 use egui::{Frame, Image, Pos2, TextureHandle, TextureOptions, Vec2};
 use puffin;
 use puffin_egui;
+
 #[derive(PartialEq, Eq, Clone, Copy)]
 enum SelectionMode {
     DIRT,
@@ -147,10 +147,6 @@ impl eframe::App for GUIrunner {
             );
             ui.add(
                 egui::Slider::new(&mut self.options.starting_food, 1..=100).text("Starting Food"),
-            );
-            ui.add(
-                egui::Slider::new(&mut self.options.pheremones_inc, 0.0..=1000.0)
-                    .text("pheremones"),
             );
             ui.add(egui::Slider::new(&mut self.options.propogation, 0..=10).text("propogation"));
 

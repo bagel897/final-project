@@ -4,9 +4,10 @@ use std::{
     time::Duration,
 };
 
+use crate::core::options::Options;
 use tracing::{event, Level};
 
-use super::{ant_grid::Options, grid::Export, BaseRunner, GridElement, IntoHelper, Runner};
+use super::{grid::Export, BaseRunner, GridElement, IntoHelper, Runner};
 enum Command {
     RESET,
     STOP,
@@ -66,10 +67,14 @@ impl Runner for ThreadRunner {
         return self.last_expt.clone();
     }
     fn reset(&mut self) {
-        self.tx_command.send(Command::RESET).expect("TODO: panic message");
+        self.tx_command
+            .send(Command::RESET)
+            .expect("TODO: panic message");
     }
     fn put<T: GridElement + 'static>(&mut self, elem: T) {
-        self.tx_elem.send(Box::new(elem)).expect("TODO: panic message");
+        self.tx_elem
+            .send(Box::new(elem))
+            .expect("TODO: panic message");
     }
 }
 impl ThreadRunner {
