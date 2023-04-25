@@ -46,18 +46,16 @@ impl GridElement for Ant {
                 self.state = Food {
                     pheromones: pheromones + 1,
                 };
-                self.pick_best_pheromones(grid)
-                    .unwrap_or(self.a_star_find(grid))
+                self.find_best(grid)
             }
             Carrying { pheromones } => {
                 grid.put_pheromones(self.pos, *pheromones + 1, &self.team, self.state.get_bool());
                 self.state = Carrying {
                     pheromones: pheromones + 1,
                 };
-                self.pick_best_pheromones(grid)
-                    .unwrap_or(self.a_star_find(grid))
+                self.find_best(grid)
             }
-            _ => self.a_star_find(grid),
+            _ => self.find_best(grid),
         };
         self.pos = res;
         if grid.is_dirt(&self.pos) {
@@ -116,6 +114,17 @@ impl Display for Ant {
 }
 
 impl Ant {
+    fn find_best(&mut self, grid: &mut AntGrid) -> Coord {
+        if let Some(coord) = self.search_action(grid) {
+            return coord;
+        }
+        return if self.state.has_pheremones() {
+            self.pick_best_pheromones(grid)
+                .unwrap_or(self.a_star_find(grid))
+        } else {
+            self.a_star_find(grid)
+        };
+    }
     fn get_state(&self) -> State {
         match &self.state {
             State::Targeted {
@@ -265,7 +274,7 @@ impl Ant {
             .min_by_key(|(_, p)| *p)
             .map(|(pos, _)| pos);
     }
-    fn a_star_find(&mut self, grid: &mut AntGrid) -> Coord {
+    fn a_star_find(&self, grid: &mut AntGrid) -> Coord {
         let mut min_val = f64::MAX;
         let mut min_cell = None;
         for dir in Dir::iter() {
@@ -273,9 +282,6 @@ impl Ant {
                 None => continue,
                 Some(i) => i,
             };
-            if self.run_action(pos, grid) {
-                return self.pos;
-            }
             let min = match self.get_dist(&pos, grid) {
                 None => continue,
                 Some(i) => i,
@@ -286,6 +292,18 @@ impl Ant {
             }
         }
         return min_cell.unwrap_or(self.pos);
+    }
+    fn search_action(&mut self, grid: &mut AntGrid) -> Option<Coord> {
+        for dir in Dir::iter() {
+            let pos = match self.pos.next_cell(&dir) {
+                None => continue,
+                Some(i) => i,
+            };
+            if self.run_action(pos, grid) {
+                return Some(self.pos);
+            }
+        }
+        return None;
     }
 
     fn send_carry(&mut self, grid: &mut AntGrid, pos: Coord) {
