@@ -1,7 +1,8 @@
 use std::{cell::RefCell, rc::Rc, time::Instant};
 
 use image::Rgb;
-use rand::{thread_rng, Rng};
+use rand::rngs::SmallRng;
+use rand::{Rng, SeedableRng};
 
 use crate::core::{AntGrid, Coord, Team};
 
@@ -20,7 +21,6 @@ pub(crate) trait Runner {
 }
 pub(crate) struct BaseRunner {
     pub grid: AntGrid,
-    rng: rand::rngs::ThreadRng,
     pub(crate) teams: Vec<Team>,
     frames: usize,
 }
@@ -54,7 +54,6 @@ impl BaseRunner {
     pub fn new(rows: usize, cols: usize, options: Options) -> Self {
         let mut res = BaseRunner {
             grid: AntGrid::new(rows, cols),
-            rng: thread_rng(),
             teams: Vec::new(),
             frames: 0,
         };
@@ -72,8 +71,9 @@ impl BaseRunner {
         }
     }
     fn rand_coord(&mut self) -> Coord {
-        let x = self.rng.gen_range(0..self.grid.cols());
-        let y = self.rng.gen_range(0..self.grid.rows());
+        let mut rng = SmallRng::from_entropy();
+        let x = rng.gen_range(0..self.grid.cols());
+        let y = rng.gen_range(0..self.grid.rows());
         Coord { x, y }
     }
     fn put_team(&mut self, color: Rgb<u8>, name: &'static str) {

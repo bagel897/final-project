@@ -1,22 +1,30 @@
-use crate::core::{team_element::ElementType, Team};
 use std::{collections::VecDeque, fmt::Display};
 
 use colored::{Color, Colorize};
 use image::Rgb;
 use strum::IntoEnumIterator;
 
+use crate::core::grid_elements::ant::State::{Carrying, Food};
 use crate::core::{
     ant_grid::AntGrid,
     signals::{Signal, SignalType},
     {Coord, Dir},
 };
+use crate::core::{team_element::ElementType, Team};
 
 use super::grid_element::GridElement;
-#[derive(Debug, Clone, PartialEq, Eq)]
+
+const INIT_PHEREMONES: f64 = 1000.0;
+
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 enum State {
-    Food,
+    Food {
+        pheremones: f64,
+    },
     Battle,
-    Carrying,
+    Carrying {
+        pheremones: f64,
+    },
     Targeted {
         prev_state: Box<State>,
         coord: Coord,
@@ -26,8 +34,6 @@ enum State {
         prev_state: Box<State>,
     },
 }
-#[derive(Debug, Clone, Copy)]
-struct Targeted {}
 
 #[derive(Debug, Clone)]
 pub(crate) struct Ant {
@@ -38,6 +44,7 @@ pub(crate) struct Ant {
     signals: VecDeque<Signal>,
     init_propogate: usize,
 }
+
 impl GridElement for Ant {
     fn pos(&self) -> &Coord {
         return &self.pos;
@@ -54,24 +61,17 @@ impl GridElement for Ant {
                 self.state = *prev_state.clone();
                 self.pos
             }
-            // State::Food => {
-            //     let p = grid.get_pheremones(&self.pos);
-            //     if p.is_some() {
-            //         let (dest, team) = p.unwrap();
-            //         assert!(dest != self.pos);
-            //         if team == self.team && !grid.is_blocked(&dest) {
-            //             println!("Moving along trail! (before) {:?}", self.pos);
-            //             self.pos = dest;
-            //             println!("Moving along trail! (after) {:?}", self.pos);
-            //             return Some(dest);
-            //         } else {
-            //             println!("Can't follow trail");
-            //         }
-            //     }
-            //     return Some(self.a_star_find(grid));
-            // }
+            Food { pheremones } => self.get_pheremones(grid).unwrap_or(self.a_star_find(grid)),
+            Carrying { pheremones } => {
+                grid.put_pheremones(self.pos, *pheremones + 1.0, self.team);
+                self.state = Carrying {
+                    pheremones: pheremones / 2.0,
+                };
+                self.a_star_find(grid)
+            }
             _ => self.a_star_find(grid),
         };
+        self.pos = res;
         if grid.is_dirt(&self.pos) {
             match &self.state {
                 State::Dirt { prev_state: _ } => (),
@@ -83,18 +83,18 @@ impl GridElement for Ant {
                 }
             }
         }
-        // if res.is_some() && self.get_state() == State::Carrying && self.pos != old_pos {
-        //     grid.put_pheremones(self.pos, old_pos, self.team);
-        // }
         self.cleanup(grid);
         res
     }
     fn team(&self) -> Option<Team> {
         Some(self.team)
     }
+    fn type_elem(&self) -> ElementType {
+        ElementType::Ant
+    }
     fn attacked(&mut self, damage: usize) {
         self.health = self.health.checked_sub(damage).unwrap_or(0);
-        if self.get_state() == State::Food {
+        if let Food { pheremones: _ } = self.get_state() {
             self.state = State::Battle;
         }
     }
@@ -104,18 +104,16 @@ impl GridElement for Ant {
     fn recv_signal(&mut self, signal: Signal) {
         self.signals.push_back(signal);
     }
-    fn type_elem(&self) -> ElementType {
-        ElementType::Ant
-    }
     fn is_removed(&self) -> bool {
         return self.health == 0;
     }
 }
+
 impl Display for Ant {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let state = match &self.state {
-            State::Carrying => "c",
-            State::Food => "s",
+            Carrying { pheremones: _ } => "c",
+            Food { pheremones: _ } => "s",
             State::Battle => "b",
             State::Targeted {
                 prev_state: _,
@@ -128,6 +126,7 @@ impl Display for Ant {
         write!(f, "{}", state.color(color))
     }
 }
+
 impl Ant {
     fn get_state(&self) -> State {
         match &self.state {
@@ -142,7 +141,7 @@ impl Ant {
     pub fn new(pos: &Coord, team: &Team) -> Self {
         return Ant {
             pos: pos.clone(),
-            state: State::Food,
+            state: Food { pheremones: 0.0 },
             team: team.clone(),
             health: team.health,
             signals: VecDeque::new(),
@@ -154,27 +153,28 @@ impl Ant {
             None => return,
             Some(i) => {
                 let old_state = &self.state;
-                let process = match i.signal_type {
-                    SignalType::Carry => *old_state == State::Carrying,
-                    SignalType::Food => *old_state == State::Food,
-                    SignalType::Battle => *old_state != State::Carrying,
-                    _ => false,
-                };
-                if !process {
-                    return;
-                }
-                match &self.state {
-                    State::Targeted {
-                        prev_state: _,
-                        coord: _,
-                        propogated,
-                    } => {
-                        if i.propogate <= *propogated {
-                            return;
-                        }
+                if let State::Targeted {
+                    prev_state: _prev_state,
+                    coord: _coord,
+                    propogated,
+                } = &self.state
+                {
+                    if i.propogate <= *propogated {
+                        return;
                     }
-                    State::Dirt { prev_state: _ } => return,
-                    _ => (),
+                }
+                if !match &self.get_state() {
+                    State::Dirt { prev_state: _ } => false,
+                    State::Food { pheremones: _ } => {
+                        i.signal_type == SignalType::Food || i.signal_type == SignalType::Battle
+                    }
+                    State::Carrying { pheremones: _ } => i.signal_type == SignalType::Carry,
+                    State::Battle => {
+                        i.signal_type == SignalType::Food || i.signal_type == SignalType::Battle
+                    }
+                    _ => false,
+                } {
+                    return;
                 }
                 self.state = State::Targeted {
                     prev_state: Box::new(old_state.clone()),
@@ -200,7 +200,7 @@ impl Ant {
     }
     fn run_action(&mut self, pos: Coord, grid: &mut AntGrid) -> bool {
         match &self.state {
-            State::Carrying => {
+            Carrying { pheremones } => {
                 if grid.is_hive_same_team(&pos, self.team) {
                     grid.send_signal(
                         &pos,
@@ -212,18 +212,22 @@ impl Ant {
                         self.team_element(),
                     );
                     self.send_carry(grid, pos);
-                    self.state = State::Food;
+                    self.state = State::Food {
+                        pheremones: INIT_PHEREMONES,
+                    };
                     return true;
                 }
                 return false;
             }
-            State::Food => {
+            State::Food { pheremones } => {
                 if self.should_battle(grid, pos) {
                     return true;
                 }
                 if grid.is_food(&pos) {
                     self.send_food_signal(grid, pos);
-                    self.state = State::Carrying;
+                    self.state = State::Carrying {
+                        pheremones: INIT_PHEREMONES,
+                    };
                     return true;
                 }
                 return false;
@@ -258,9 +262,20 @@ impl Ant {
             _ => false,
         }
     }
+    fn get_pheremones(&mut self, grid: &mut AntGrid) -> Option<Coord> {
+        return Dir::iter()
+            .filter_map(|d| self.pos.next_cell(&d))
+            .filter_map(|pos| {
+                grid.get_pheremones(&pos, &self.team)
+                    .map(|f| (pos.clone(), f.clone()))
+            })
+            .min_by(|(_, p1), (_, p2)| p1.partial_cmp(p2).unwrap())
+            .filter(|(_, p)| *p > 1.0)
+            .map(|(pos, _)| pos);
+    }
     fn a_star_find(&mut self, grid: &mut AntGrid) -> Coord {
         let mut min_val = f64::MAX;
-        let mut min_cell = Option::None;
+        let mut min_cell = None;
         for dir in Dir::iter() {
             let pos = match self.pos.next_cell(&dir) {
                 None => continue,
@@ -278,8 +293,7 @@ impl Ant {
                 min_cell = Some(pos);
             }
         }
-        self.pos = min_cell.unwrap_or(self.pos);
-        return self.pos;
+        return min_cell.unwrap_or(self.pos);
     }
 
     fn send_carry(&mut self, grid: &mut AntGrid, pos: Coord) {
@@ -322,8 +336,12 @@ impl Ant {
     }
     fn get_dist(&self, pos: &Coord, grid: &mut AntGrid) -> Option<f64> {
         let res = match &self.state {
-            State::Food => grid.distance_to_food(&pos)?,
-            State::Carrying => grid.distance_to_hive(&pos, &self.team)?,
+            State::Food {
+                pheremones: _pheremones,
+            } => grid.distance_to_food(&pos)?,
+            State::Carrying {
+                pheremones: _pheremones,
+            } => grid.distance_to_hive(&pos, &self.team)?,
             State::Battle => grid.distance_to_enemy(&pos, &self.team)?,
             State::Targeted {
                 prev_state: _,

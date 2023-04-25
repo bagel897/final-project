@@ -16,7 +16,7 @@ impl Dir {
         }
     }
 }
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Copy, Ord, PartialOrd)]
 pub(crate) struct Coord {
     pub x: usize,
     pub y: usize,

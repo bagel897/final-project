@@ -1,13 +1,19 @@
+use std::{cell::RefCell, collections::VecDeque, fmt::Display, rc::Rc};
+
 use multimap::MultiMap;
-use rand::{distributions::Uniform, thread_rng, Rng};
+use rand::distributions::Uniform;
+use rand::rngs::SmallRng;
+use rand::{Rng, SeedableRng};
 
 use crate::core::{grid::Grid, grid_elements::grid_element::GridElement, Coord, Team};
-use std::{
-    cell::RefCell,
-    collections::{VecDeque},
-    fmt::Display,
-    rc::Rc,
+
+use super::{
+    grid::Export,
+    grid_elements::food::FOOD_ELEMENT,
+    signals::Signal,
+    team_element::{ElementType, TeamElement},
 };
+
 #[derive(Clone, Copy)]
 pub(crate) struct Options {
     pub pheremones_inc: f64,
@@ -19,6 +25,7 @@ pub(crate) struct Options {
     pub speed: usize,
     pub propogation: usize,
 }
+
 impl Default for Options {
     fn default() -> Self {
         return Options {
@@ -33,18 +40,13 @@ impl Default for Options {
         };
     }
 }
-use super::{
-    grid::Export,
-    grid_elements::food::FOOD_ELEMENT,
-    signals::Signal,
-    team_element::{ElementType, TeamElement},
-};
+
 pub(crate) struct AntGrid {
     grid: Grid,
     elements: MultiMap<TeamElement, Rc<RefCell<dyn GridElement>>>,
     pub options: Options,
-    rng: rand::rngs::ThreadRng,
 }
+
 impl AntGrid {
     pub(super) fn is_blocked(&self, coord: &Coord) -> bool {
         if !self.grid.does_exist(coord) {
@@ -170,16 +172,16 @@ impl AntGrid {
             pt,
         );
     }
-    pub(super) fn get_pheremones(&mut self, pt: &Coord) -> Option<(Coord, Team)> {
-        return self.grid.get(pt).pheremones;
+    pub(super) fn get_pheremones(&mut self, pt: &Coord, team: &Team) -> Option<&f64> {
+        return self.grid.get(pt).pheremones.get(team);
     }
 }
+
 impl AntGrid {
     pub fn new(rows: usize, cols: usize) -> Self {
         AntGrid {
             grid: Grid::new(rows, cols),
             elements: MultiMap::new(),
-            rng: thread_rng(),
             options: Options::default(),
         }
     }
@@ -239,8 +241,15 @@ impl AntGrid {
         self.elements
             .insert(elem_ref.borrow().team_element(), elem_ref.clone());
     }
-    pub fn put_pheremones(&mut self, pos: Coord, prev: Coord, team: Team) {
-        self.grid.get_mut(&pos).pheremones = Some((prev, team));
+    pub fn put_pheremones(&mut self, pos: Coord, val: f64, team: Team) {
+        let old_val = self
+            .grid
+            .get_mut(&pos)
+            .pheremones
+            .get(&team)
+            .unwrap_or(&0.0);
+        let new_val = f64::max(*old_val, val);
+        self.grid.get_mut(&pos).pheremones.insert(team, new_val);
     }
     pub fn rows(&self) -> usize {
         return self.grid.rows;
@@ -252,14 +261,16 @@ impl AntGrid {
         return self.grid.export(frames, teams);
     }
 }
+
 impl AntGrid {
-    fn adjust(&mut self, distance: f64) -> f64 {
+    fn adjust(&self, distance: f64) -> f64 {
+        let mut rng = SmallRng::from_entropy();
         let top = 1.0 + self.options.smell;
         let bot = 1.0 - self.options.smell;
-        let rand = self.rng.sample(Uniform::new(bot, top));
+        let rand = rng.sample(Uniform::new(bot, top));
         return rand * distance;
     }
-    fn distance(&mut self, team_elem: &TeamElement, pt: &Coord) -> Option<f64> {
+    fn distance(&self, team_elem: &TeamElement, pt: &Coord) -> Option<f64> {
         if self.is_blocked(pt) {
             return None;
         }
@@ -279,6 +290,7 @@ impl AntGrid {
         );
     }
 }
+
 impl Display for AntGrid {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.grid)
