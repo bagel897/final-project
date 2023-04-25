@@ -146,13 +146,13 @@ impl eframe::App for GUIrunner {
                     .text("Signal Radius"),
             );
             ui.add(
-                egui::Slider::new(&mut self.options.decay, 0..=1000)
+                egui::Slider::new(&mut self.options.decay, 0..=10000)
                     .text("Pheromone decay (rounds)"),
             );
             ui.add(
                 egui::Slider::new(&mut self.options.starting_food, 1..=100).text("Starting Food"),
             );
-            ui.add(egui::Slider::new(&mut self.options.propagation, 0..=10).text("propogation"));
+            ui.add(egui::Slider::new(&mut self.options.propagation, 0..=10).text("propagation"));
 
             // if ui.button("Add food (random)").clicked() {
             //     self.runner.put_food(1);

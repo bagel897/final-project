@@ -18,7 +18,7 @@ impl Default for Options {
             speed: 20,
             propagation: 3,
             dirt_penalty: 1.2,
-            decay: 200,
+            decay: 1000,
         };
     }
 }
