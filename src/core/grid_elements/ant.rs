@@ -263,17 +263,20 @@ impl Ant {
             _ => false,
         }
     }
-    fn pick_best_pheromones(&mut self, grid: &AntGrid) -> Option<Coord> {
-        return Dir::iter()
+    fn pick_best_pheromones(&mut self, grid: &mut AntGrid) -> Option<Coord> {
+        let cur = grid.get_pheromones(self.pos(), self.team, !self.state.get_bool());
+
+        let cells: Vec<Coord> = Dir::iter()
             .filter_map(|d| self.pos.next_cell(&d))
             .filter(|p| !grid.is_blocked(p))
+            .collect();
+        return cells
+            .iter()
             .map(|pos| {
                 let f = grid.get_pheromones(&pos, self.team, !self.state.get_bool());
                 (pos.clone(), f)
             })
-            .filter(|(_, p)| {
-                *p < grid.get_pheromones(self.pos(), self.team, !self.state.get_bool())
-            })
+            .filter(|(_, p)| *p < cur)
             .min_by_key(|(_, p)| *p)
             .map(|(pos, _)| pos);
     }

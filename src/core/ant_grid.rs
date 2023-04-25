@@ -5,6 +5,7 @@ use rand::distributions::Uniform;
 use rand::rngs::SmallRng;
 use rand::{Rng, SeedableRng};
 
+use crate::core::grid::Pheromones;
 use crate::core::options::Options;
 use crate::core::{grid::Grid, grid_elements::grid_element::GridElement, Coord, Team};
 
@@ -162,19 +163,18 @@ impl AntGrid {
             pt,
         );
     }
-    pub(super) fn get_pheromones(&self, pt: &Coord, team: Team, state_bool: bool) -> usize {
+    pub(super) fn get_pheromones(&mut self, pt: &Coord, team: Team, state_bool: bool) -> usize {
+        self.grid
+            .get_mut(pt)
+            .clear_old(self.round_num, self.options.decay);
         let key = (team, state_bool);
-        let pheromones = self.grid.get(pt).pheromones.get(&key);
-        match pheromones {
-            None => usize::MAX,
-            Some((pheromones, round)) => {
-                if (self.round_num - round) > self.options.decay {
-                    usize::MAX
-                } else {
-                    *pheromones
-                }
-            }
-        }
+        return self
+            .grid
+            .get(pt)
+            .pheromones
+            .get(&key)
+            .map(|p| p.pheromones)
+            .unwrap_or(usize::MAX);
     }
     pub(super) fn put_pheromones(
         &mut self,
@@ -183,18 +183,20 @@ impl AntGrid {
         team: &Team,
         state_bool: bool,
     ) {
-        let old_val = self
-            .grid
+        self.grid
             .get_mut(&pos)
-            .pheromones
-            .get(&(team.clone(), state_bool))
-            .map(|(a, b)| a)
-            .unwrap_or(&usize::MAX);
-        if new_val < *old_val {
-            self.grid
-                .get_mut(&pos)
-                .pheromones
-                .insert((team.clone(), state_bool), (new_val, self.round_num));
+            .clear_old(self.round_num, self.options.decay);
+        let key = (team.clone(), state_bool);
+        let old = self.grid.get_mut(&pos).pheromones.get(&key);
+        let old_val = old.clone().map(|a| a.pheromones).unwrap_or(usize::MAX);
+        if new_val < old_val {
+            self.grid.get_mut(&pos).pheromones.insert(
+                key,
+                Pheromones {
+                    pheromones: new_val,
+                    age: self.round_num,
+                },
+            );
         }
     }
 }
