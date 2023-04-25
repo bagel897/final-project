@@ -2,6 +2,9 @@ use std::{collections::VecDeque, fmt::Display};
 
 use colored::{Color, Colorize};
 use image::Rgb;
+use rand::prelude::IteratorRandom;
+use rand::rngs::SmallRng;
+use rand::SeedableRng;
 use strum::IntoEnumIterator;
 
 use crate::core::grid_elements::state::State;
@@ -120,7 +123,7 @@ impl Ant {
         }
         return if self.state.has_pheremones() {
             self.pick_best_pheromones(grid)
-                .unwrap_or(self.a_star_find(grid))
+                .unwrap_or(self.random_dir(grid))
         } else {
             self.a_star_find(grid)
         };
@@ -274,24 +277,14 @@ impl Ant {
             .min_by_key(|(_, p)| *p)
             .map(|(pos, _)| pos);
     }
-    fn a_star_find(&self, grid: &mut AntGrid) -> Coord {
-        let mut min_val = f64::MAX;
-        let mut min_cell = None;
-        for dir in Dir::iter() {
-            let pos = match self.pos.next_cell(&dir) {
-                None => continue,
-                Some(i) => i,
-            };
-            let min = match self.get_dist(&pos, grid) {
-                None => continue,
-                Some(i) => i,
-            };
-            if min < min_val && !grid.is_blocked(&pos) {
-                min_val = min;
-                min_cell = Some(pos);
-            }
-        }
-        return min_cell.unwrap_or(self.pos);
+    fn a_star_find(&self, grid: &AntGrid) -> Coord {
+        return Dir::iter()
+            .filter_map(|dir| self.pos.next_cell(&dir))
+            .filter(|pos| !grid.is_blocked(pos))
+            .filter_map(|pos| self.get_dist(&pos, grid).map(|dist| (pos, dist)))
+            .min_by(|(_, d1), (_, d2)| d1.partial_cmp(d2).unwrap())
+            .map(|(pos, _)| pos)
+            .unwrap_or(self.pos);
     }
     fn search_action(&mut self, grid: &mut AntGrid) -> Option<Coord> {
         for dir in Dir::iter() {
@@ -344,7 +337,7 @@ impl Ant {
             self.team_element(),
         );
     }
-    fn get_dist(&self, pos: &Coord, grid: &mut AntGrid) -> Option<f64> {
+    fn get_dist(&self, pos: &Coord, grid: &AntGrid) -> Option<f64> {
         let res = match &self.state {
             Food {
                 pheromones: _pheromones,
@@ -361,5 +354,13 @@ impl Ant {
             _ => return None,
         };
         return Some(res);
+    }
+    fn random_dir(&self, grid: &mut AntGrid) -> Coord {
+        let mut rng = SmallRng::from_entropy();
+        return Dir::iter()
+            .filter_map(|dir| self.pos.next_cell(&dir))
+            .filter(|pos| !grid.is_blocked(pos))
+            .choose(&mut rng)
+            .unwrap_or(self.pos);
     }
 }

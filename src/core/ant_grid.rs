@@ -130,10 +130,10 @@ impl AntGrid {
                 team: Some(team),
             };
     }
-    pub(super) fn distance_to_food(&mut self, pt: &Coord) -> Option<f64> {
+    pub(super) fn distance_to_food(&self, pt: &Coord) -> Option<f64> {
         return self.distance(&FOOD_ELEMENT, pt);
     }
-    pub(super) fn distance_to_enemy(&mut self, pt: &Coord, team: &Team) -> Option<f64> {
+    pub(super) fn distance_to_enemy(&self, pt: &Coord, team: &Team) -> Option<f64> {
         if self.is_blocked(pt) {
             return None;
         }
@@ -150,7 +150,7 @@ impl AntGrid {
             .filter_map(|f| f)
             .min_by(|x, y| x.total_cmp(y))
     }
-    pub(super) fn distance_to_hive(&mut self, pt: &Coord, team: &Team) -> Option<f64> {
+    pub(super) fn distance_to_hive(&self, pt: &Coord, team: &Team) -> Option<f64> {
         if self.is_blocked(pt) {
             return None;
         }
@@ -208,7 +208,6 @@ impl AntGrid {
             round_num: 0,
         }
     }
-
     pub fn run_round(&mut self) {
         let mut to_iter: VecDeque<(usize, Rc<RefCell<dyn GridElement>>)> = self
             .elements
