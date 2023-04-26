@@ -5,7 +5,9 @@ pub(crate) enum State {
     Food {
         pheromones: usize,
     },
-    Battle,
+    Battle {
+        rage: usize,
+    },
     Carrying {
         pheromones: usize,
     },

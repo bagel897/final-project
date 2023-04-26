@@ -27,7 +27,7 @@ pub(crate) struct Ant {
     signals: VecDeque<Signal>,
     init_propagate: usize,
 }
-
+const INIT_RAGE: usize = 10;
 impl GridElement for Ant {
     fn pos(&self) -> &Coord {
         return &self.pos;
