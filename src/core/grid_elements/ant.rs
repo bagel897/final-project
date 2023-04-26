@@ -27,7 +27,9 @@ pub(crate) struct Ant {
     signals: VecDeque<Signal>,
     init_propagate: usize,
 }
+
 const INIT_RAGE: usize = 10;
+
 impl GridElement for Ant {
     fn pos(&self) -> &Coord {
         return &self.pos;
@@ -84,7 +86,7 @@ impl GridElement for Ant {
     fn attacked(&mut self, damage: usize) {
         self.health = self.health.checked_sub(damage).unwrap_or(0);
         if let Food { pheromones: _ } = self.get_state() {
-            self.state = State::Battle;
+            self.state = State::Battle { rage: INIT_RAGE };
         }
     }
     fn color(&self) -> Rgb<u8> {
@@ -96,11 +98,11 @@ impl GridElement for Ant {
     fn is_removed(&self) -> bool {
         return self.health == 0;
     }
-    fn pass_food(&mut self, pheremones: usize) -> Option<usize> {
+    fn pass_food(&mut self, other_pheromones: usize) -> Option<usize> {
         match self.state {
             Food { pheromones } => {
                 self.state = Carrying {
-                    pheromones: pheromones + 1,
+                    pheromones: other_pheromones + 1,
                 };
                 Some(pheromones)
             }
@@ -114,7 +116,7 @@ impl Display for Ant {
         let state = match &self.state {
             Carrying { pheromones: _ } => "c",
             Food { pheromones: _ } => "s",
-            State::Battle => "b",
+            State::Battle { rage: _ } => "b",
             State::Targeted {
                 prev_state: _,
                 coord: _,
@@ -180,9 +182,7 @@ impl Ant {
                         i.signal_type == SignalType::Food || i.signal_type == SignalType::Battle
                     }
                     Carrying { pheromones: _ } => i.signal_type == SignalType::Carry,
-                    State::Battle => {
-                        i.signal_type == SignalType::Food || i.signal_type == SignalType::Battle
-                    }
+                    State::Battle { rage: _ } => i.signal_type == SignalType::Battle,
                     _ => false,
                 } {
                     return;
@@ -241,7 +241,7 @@ impl Ant {
             Food {
                 pheromones: _pheromones,
             } => {
-                if self.should_battle(grid, pos) {
+                if self.should_battle(grid, pos, false) {
                     return true;
                 }
                 if grid.is_food(&pos) {
@@ -252,22 +252,7 @@ impl Ant {
                 }
                 return false;
             }
-            State::Battle => {
-                if grid.is_enemy(&pos, &self.team) {
-                    grid.send_signal(
-                        &pos,
-                        Signal {
-                            coord: pos,
-                            signal_type: SignalType::Battle,
-                            propagate: 0,
-                        },
-                        self.team_element(),
-                    );
-                    grid.attack(&pos, &self.team);
-                    return true;
-                }
-                return false;
-            }
+            State::Battle { rage: usize } => self.should_battle(grid, pos, true),
             State::Targeted {
                 prev_state,
                 coord,
@@ -332,7 +317,7 @@ impl Ant {
             self.team_element(),
         );
     }
-    fn should_battle(&mut self, grid: &mut AntGrid, coord: Coord) -> bool {
+    fn should_battle(&mut self, grid: &mut AntGrid, coord: Coord, attack: bool) -> bool {
         if grid.is_enemy(&coord, &self.team) {
             grid.send_signal(
                 &coord,
@@ -343,7 +328,10 @@ impl Ant {
                 },
                 self.team_element(),
             );
-            self.state = State::Battle;
+            self.state = State::Battle { rage: INIT_RAGE };
+            if attack {
+                grid.attack(&coord, &self.team);
+            }
             return true;
         }
         return false;
@@ -361,13 +349,7 @@ impl Ant {
     }
     fn get_dist(&self, pos: &Coord, grid: &AntGrid) -> Option<f64> {
         let res = match &self.state {
-            Food {
-                pheromones: _pheromones,
-            } => grid.distance_to_food(&pos)?,
-            Carrying {
-                pheromones: _pheromones,
-            } => grid.distance_to_hive(&pos, &self.team)?,
-            State::Battle => grid.distance_to_enemy(&pos, &self.team)?,
+            State::Battle { rage: _ } => grid.distance_to_enemy(&pos, &self.team)?,
             State::Targeted {
                 prev_state: _,
                 coord,

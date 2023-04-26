@@ -8,6 +8,7 @@ use rand::{Rng, SeedableRng};
 use crate::core::grid::Pheromones;
 use crate::core::grid_elements::dirt::DIRT_ELEMENT;
 use crate::core::options::Options;
+use crate::core::team_element::ElementType::Hive;
 use crate::core::{grid::Grid, grid_elements::grid_element::GridElement, Coord, Team};
 
 use super::{
@@ -135,9 +136,6 @@ impl AntGrid {
         let elem = ant.borrow().team_element();
         return elem == *team_elem;
     }
-    pub(super) fn distance_to_food(&self, pt: &Coord) -> Option<f64> {
-        return self.distance(&FOOD_ELEMENT, pt);
-    }
     pub(super) fn distance_to_enemy(&self, pt: &Coord, team: &Team) -> Option<f64> {
         if self.is_blocked(pt) {
             return None;
@@ -155,17 +153,14 @@ impl AntGrid {
             .filter_map(|f| f)
             .min_by(|x, y| x.total_cmp(y))
     }
-    pub(super) fn distance_to_hive(&self, pt: &Coord, team: &Team) -> Option<f64> {
-        if self.is_blocked(pt) {
-            return None;
-        }
-        return self.distance(
-            &TeamElement {
-                element: ElementType::Hive,
-                team: Some(*team),
-            },
-            pt,
-        );
+    pub(super) fn hive_exists(&mut self, team: Team) -> bool {
+        return self
+            .elements
+            .get(&TeamElement {
+                element: Hive,
+                team: Some(team),
+            })
+            .is_some();
     }
     pub(super) fn get_pheromones(&mut self, pt: &Coord, team: Team, state_bool: bool) -> usize {
         self.grid
