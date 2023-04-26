@@ -8,7 +8,7 @@ use rand::SeedableRng;
 use strum::IntoEnumIterator;
 
 use crate::core::grid_elements::state::State;
-use crate::core::grid_elements::state::State::{Carrying, Food};
+use crate::core::grid_elements::state::State::{Battle, Carrying, Food};
 use crate::core::{
     ant_grid::AntGrid,
     signals::{Signal, SignalType},
@@ -41,6 +41,12 @@ impl GridElement for Ant {
     fn decide(&mut self, grid: &mut AntGrid) -> Coord {
         self.init();
         self.init_propagate = grid.options.propagation;
+        if let State::Dirt { prev_state } = &self.get_state() {
+        } else {
+            if !grid.hive_exists(self.team) {
+                self.state = Battle { rage: INIT_RAGE };
+            }
+        }
         let res = match &self.state {
             State::Dirt { prev_state } => {
                 self.state = *prev_state.clone();

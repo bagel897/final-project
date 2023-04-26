@@ -5,6 +5,7 @@ use std::env;
 
 use gui::gui_runner::run_gui;
 use tui::run_tui;
+
 mod core;
 mod gui;
 mod tui;
