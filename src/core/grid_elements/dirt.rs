@@ -2,6 +2,7 @@ use std::fmt::Display;
 
 use image::Rgb;
 
+use crate::core::team_element::TeamElement;
 use crate::core::{team_element::ElementType, AntGrid, Coord};
 
 use super::grid_element::GridElement;
@@ -46,3 +47,7 @@ impl Display for Dirt {
         write!(f, "x")
     }
 }
+pub(crate) const DIRT_ELEMENT: TeamElement = TeamElement {
+    element: ElementType::Dirt,
+    team: None,
+};

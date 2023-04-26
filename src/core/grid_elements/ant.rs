@@ -96,6 +96,17 @@ impl GridElement for Ant {
     fn is_removed(&self) -> bool {
         return self.health == 0;
     }
+    fn pass_food(&mut self, pheremones: usize) -> Option<usize> {
+        match self.state {
+            Food { pheromones } => {
+                self.state = Carrying {
+                    pheromones: pheromones + 1,
+                };
+                Some(pheromones)
+            }
+            _ => None,
+        }
+    }
 }
 
 impl Display for Ant {
@@ -200,9 +211,7 @@ impl Ant {
     }
     fn run_action(&mut self, pos: Coord, grid: &mut AntGrid) -> bool {
         match &self.state {
-            Carrying {
-                pheromones: _pheromones,
-            } => {
+            Carrying { pheromones } => {
                 if grid.is_hive_same_team(&pos, self.team) {
                     grid.send_signal(
                         &pos,
@@ -216,6 +225,16 @@ impl Ant {
                     self.send_carry(grid, pos);
                     self.state = Food { pheromones: 0 };
                     return true;
+                }
+                if grid.is_same_team_elem(&pos, &self.team_element()) {
+                    match grid.pass_food(&pos, *pheromones) {
+                        None => (),
+                        Some(pheromones) => {
+                            self.state = Food {
+                                pheromones: pheromones + 1,
+                            };
+                        }
+                    }
                 }
                 return false;
             }

@@ -6,6 +6,7 @@ use rand::rngs::SmallRng;
 use rand::{Rng, SeedableRng};
 
 use crate::core::grid::Pheromones;
+use crate::core::grid_elements::dirt::DIRT_ELEMENT;
 use crate::core::options::Options;
 use crate::core::{grid::Grid, grid_elements::grid_element::GridElement, Coord, Team};
 
@@ -65,6 +66,15 @@ impl AntGrid {
         self.damage(coord);
     }
 
+    pub(super) fn pass_food(&mut self, coord: &Coord, pheromones: usize) -> Option<usize> {
+        assert!(self.is_blocked(coord));
+        return self
+            .grid
+            .get_mut(coord)
+            .get_elem()
+            .borrow_mut()
+            .pass_food(pheromones);
+    }
     fn damage(&mut self, coord: &Coord) {
         let ant = self.grid.get(coord).elem.clone().unwrap();
         let mut other_entity = ant.borrow_mut();
@@ -88,13 +98,7 @@ impl AntGrid {
         self.damage(coord);
     }
     pub(super) fn is_dirt(&self, coord: &Coord) -> bool {
-        if !self.grid.does_exist(coord) {
-            return false;
-        }
-        return self.grid.get(coord).elem.clone().map_or(false, |f| {
-            f.try_borrow()
-                .map_or(false, |g| g.type_elem() == ElementType::Dirt)
-        });
+        return self.is_same_team_elem(coord, &DIRT_ELEMENT);
     }
     pub(super) fn is_enemy(&self, coord: &Coord, team: &Team) -> bool {
         if !self.grid.does_exist(coord) {
@@ -112,24 +116,24 @@ impl AntGrid {
         };
     }
     pub(super) fn is_food(&self, coord: &Coord) -> bool {
-        if !self.grid.does_exist(coord) {
-            return false;
-        }
-        let ant = self.grid.get(coord).get_elem();
-
-        return ant.borrow().type_elem() == ElementType::Food;
+        return self.is_same_team_elem(coord, &FOOD_ELEMENT);
     }
     pub(super) fn is_hive_same_team(&self, coord: &Coord, team: Team) -> bool {
+        return self.is_same_team_elem(
+            coord,
+            &TeamElement {
+                element: ElementType::Hive,
+                team: Some(team),
+            },
+        );
+    }
+    pub(super) fn is_same_team_elem(&self, coord: &Coord, team_elem: &TeamElement) -> bool {
         if !self.grid.does_exist(coord) {
             return false;
         }
         let ant = self.grid.get(coord).get_elem();
         let elem = ant.borrow().team_element();
-        return elem
-            == TeamElement {
-                element: ElementType::Hive,
-                team: Some(team),
-            };
+        return elem == *team_elem;
     }
     pub(super) fn distance_to_food(&self, pt: &Coord) -> Option<f64> {
         return self.distance(&FOOD_ELEMENT, pt);
