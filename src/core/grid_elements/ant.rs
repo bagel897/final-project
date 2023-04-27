@@ -58,6 +58,15 @@ impl GridElement for Ant {
                 };
                 self.find_best(grid)
             }
+            Battle { rage } => {
+                if *rage == 0 {
+                    self.state = Food { pheromones: 0 };
+                    self.pos
+                } else {
+                    self.state = Battle { rage: rage - 1 };
+                    self.find_best(grid)
+                }
+            }
             Carrying { pheromones } => {
                 grid.put_pheromones(self.pos, *pheromones + 1, &self.team, self.state.get_bool());
                 self.state = Carrying {
