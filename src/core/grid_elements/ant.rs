@@ -3,7 +3,7 @@ use std::{collections::VecDeque, fmt::Display};
 use colored::{Color, Colorize};
 use image::Rgb;
 use rand::distributions::WeightedIndex;
-use rand::prelude::{Distribution, IteratorRandom};
+use rand::prelude::Distribution;
 use strum::IntoEnumIterator;
 
 use crate::core::grid_elements::state::State;
@@ -40,7 +40,7 @@ impl GridElement for Ant {
     fn decide(&mut self, grid: &mut AntGrid) -> Coord {
         self.init();
         self.init_propagate = grid.options.propagation;
-        if let State::Dirt { prev_state } = &self.get_state() {
+        if let State::Dirt { prev_state: _ } = &self.get_state() {
         } else {
             if !grid.hive_exists(self.team) {
                 self.state = Battle { rage: INIT_RAGE };
@@ -139,12 +139,16 @@ impl Ant {
         if let Some(coord) = self.search_action(grid) {
             return coord;
         }
-        return if self.state.has_pheremones() {
-            self.pick_best_pheromones(grid)
-                .unwrap_or(self.random_dir(grid))
-        } else {
-            self.a_star_find(grid)
-        };
+        match self.state {
+            Carrying { pheromones: _ } => self
+                .pick_best_pheromones(grid)
+                .unwrap_or(self.random_dir(grid)),
+            Food { pheromones: _ } => self
+                .pick_best_pheromones(grid)
+                .unwrap_or(self.random_dir(grid)),
+            Battle { rage: _ } => self.random_dir(grid),
+            _ => self.a_star_find(grid),
+        }
     }
     fn get_state(&self) -> State {
         match &self.state {
@@ -257,7 +261,7 @@ impl Ant {
                 }
                 return false;
             }
-            State::Battle { rage: usize } => self.should_battle(grid, pos, true),
+            State::Battle { rage: _ } => self.should_battle(grid, pos, true),
             State::Targeted {
                 prev_state,
                 coord,
@@ -293,7 +297,7 @@ impl Ant {
         return Dir::iter()
             .filter_map(|dir| self.pos.next_cell(&dir))
             .filter(|pos| !grid.is_blocked(pos))
-            .filter_map(|pos| self.get_dist(&pos, grid).map(|dist| (pos, dist)))
+            .filter_map(|pos| self.get_dist(&pos).map(|dist| (pos, dist)))
             .min_by(|(_, d1), (_, d2)| d1.partial_cmp(d2).unwrap())
             .map(|(pos, _)| pos)
             .unwrap_or(self.pos);
@@ -352,7 +356,7 @@ impl Ant {
             self.team_element(),
         );
     }
-    fn get_dist(&self, pos: &Coord, grid: &AntGrid) -> Option<f64> {
+    fn get_dist(&self, pos: &Coord) -> Option<f64> {
         let res = match &self.state {
             State::Targeted {
                 prev_state: _,

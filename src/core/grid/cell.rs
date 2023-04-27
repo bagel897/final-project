@@ -51,7 +51,7 @@ impl Cell {
     }
     pub fn clear_old(&mut self, round_num: usize, decay: usize) {
         self.pheromones
-            .drain_filter(|key, val| round_num - val.age > decay);
+            .drain_filter(|_, val| round_num - val.age > decay);
     }
 }
 

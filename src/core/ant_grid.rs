@@ -1,9 +1,8 @@
 use std::{cell::RefCell, collections::VecDeque, fmt::Display, rc::Rc};
 
 use multimap::MultiMap;
-use rand::distributions::Uniform;
 use rand::rngs::SmallRng;
-use rand::{Rng, SeedableRng};
+use rand::SeedableRng;
 
 use crate::core::grid::Pheromones;
 use crate::core::grid_elements::dirt::DIRT_ELEMENT;
@@ -259,34 +258,6 @@ impl AntGrid {
     }
     pub fn export(&self, frames: usize, teams: Vec<Team>) -> Export {
         return self.grid.export(frames, teams);
-    }
-}
-
-impl AntGrid {
-    fn adjust(&mut self, distance: f64) -> f64 {
-        let top = 1.0 + self.options.smell;
-        let bot = 1.0 - self.options.smell;
-        let rand = self.rng.sample(Uniform::new(bot, top));
-        return rand * distance;
-    }
-    fn distance(&mut self, team_elem: &TeamElement, pt: &Coord) -> Option<f64> {
-        if self.is_blocked(pt) {
-            return None;
-        }
-        let dirt_factor = match self.is_dirt(pt) {
-            true => self.options.dirt_penalty,
-            false => 1.0,
-        };
-        return Some(
-            self.adjust(
-                self.elements
-                    .get_vec(team_elem)?
-                    .iter()
-                    .filter_map(|f| f.try_borrow().ok())
-                    .map(|f| pt.distance(&f.pos()))
-                    .min_by(|x, y| x.total_cmp(y))?,
-            ) * dirt_factor,
-        );
     }
 }
 

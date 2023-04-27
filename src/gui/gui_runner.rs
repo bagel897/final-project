@@ -1,11 +1,12 @@
 use std::time::Instant;
 
-use crate::core::Options;
-use crate::core::{BaseRunner, Coord, Dirt, Food, Hive, Runner, Team};
 use eframe::Renderer;
 use egui::{Frame, Image, Pos2, TextureHandle, TextureOptions, Vec2};
 use puffin;
 use puffin_egui;
+
+use crate::core::Options;
+use crate::core::{BaseRunner, Coord, Dirt, Food, Hive, Runner, Team};
 
 #[derive(PartialEq, Eq, Clone, Copy)]
 enum SelectionMode {
@@ -13,14 +14,16 @@ enum SelectionMode {
     HIVE,
     FOOD,
 }
+
 struct Timer {
     frames: usize,
     start: Instant,
 }
+
 impl Timer {
-    fn new() -> Self {
+    fn new(frames: usize) -> Self {
         Timer {
-            frames: 0,
+            frames,
             start: Instant::now(),
         }
     }
@@ -35,11 +38,13 @@ impl Timer {
         return (self.frames as f64) / (time as f64);
     }
 }
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 struct AddMode {
     team: Option<Team>,
     selection_mode: SelectionMode,
 }
+
 const FOOD_MODE: AddMode = AddMode {
     team: None,
     selection_mode: SelectionMode::FOOD,
@@ -48,7 +53,9 @@ const DIRT_MODE: AddMode = AddMode {
     team: None,
     selection_mode: SelectionMode::DIRT,
 };
+
 type RunnerMode = BaseRunner;
+
 struct GUIrunner {
     runner: RunnerMode,
     texture: TextureHandle,
@@ -59,10 +66,12 @@ struct GUIrunner {
     profile: bool,
     options: Options,
 }
+
 impl GUIrunner {
     pub fn new(rows: usize, cols: usize, cc: &eframe::CreationContext<'_>) -> Self {
         let options = Options::default();
         let mut runner = RunnerMode::new(rows, cols, options);
+        let frames = runner.export().frames();
         let image = runner.export().to_image();
         let texture = cc
             .egui_ctx
@@ -72,7 +81,7 @@ impl GUIrunner {
             texture,
             rows,
             cols,
-            timer: Timer::new(),
+            timer: Timer::new(frames),
             add_mode: FOOD_MODE,
             profile: false,
             options,
@@ -84,7 +93,7 @@ impl GUIrunner {
         self.timer_reset();
     }
     fn timer_reset(&mut self) {
-        self.timer = Timer::new();
+        self.timer = Timer::new(self.runner.export().frames());
     }
     fn add(&mut self, rect: Pos2, _drag: Vec2) {
         let y = rect.y as usize;
@@ -124,6 +133,7 @@ impl GUIrunner {
         }
     }
 }
+
 impl eframe::App for GUIrunner {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.runner.run();
@@ -208,6 +218,7 @@ impl eframe::App for GUIrunner {
         ctx.request_repaint();
     }
 }
+
 pub fn run_gui(rows: usize, cols: usize) -> Result<(), eframe::Error> {
     let mut native_options = eframe::NativeOptions::default();
     native_options.fullscreen = true;

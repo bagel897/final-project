@@ -29,11 +29,4 @@ impl State {
             _ => panic!(),
         }
     }
-    pub fn has_pheremones(&self) -> bool {
-        match self {
-            State::Food { .. } => true,
-            State::Carrying { .. } => true,
-            _ => false,
-        }
-    }
 }
