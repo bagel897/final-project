@@ -22,6 +22,7 @@ pub(crate) struct AntGrid {
     grid: Grid,
     elements: MultiMap<TeamElement, Rc<RefCell<dyn GridElement>>>,
     round_num: usize,
+    pub rng: SmallRng,
     pub options: Options,
 }
 
@@ -136,23 +137,6 @@ impl AntGrid {
         let elem = ant.borrow().team_element();
         return elem == *team_elem;
     }
-    pub(super) fn distance_to_enemy(&self, pt: &Coord, team: &Team) -> Option<f64> {
-        if self.is_blocked(pt) {
-            return None;
-        }
-        let elems: Vec<TeamElement> = self
-            .elements
-            .keys()
-            .filter(|k| k.team.map_or(false, |t| t != *team))
-            .map(|t| t.clone())
-            .collect();
-
-        elems
-            .iter()
-            .map(|elem| self.distance(elem, pt))
-            .filter_map(|f| f)
-            .min_by(|x, y| x.total_cmp(y))
-    }
     pub(super) fn hive_exists(&mut self, team: Team) -> bool {
         return self
             .elements
@@ -207,6 +191,7 @@ impl AntGrid {
             elements: MultiMap::new(),
             options: Options::default(),
             round_num: 0,
+            rng: SmallRng::from_entropy(),
         }
     }
     pub fn run_round(&mut self) {
@@ -278,14 +263,13 @@ impl AntGrid {
 }
 
 impl AntGrid {
-    fn adjust(&self, distance: f64) -> f64 {
-        let mut rng = SmallRng::from_entropy();
+    fn adjust(&mut self, distance: f64) -> f64 {
         let top = 1.0 + self.options.smell;
         let bot = 1.0 - self.options.smell;
-        let rand = rng.sample(Uniform::new(bot, top));
+        let rand = self.rng.sample(Uniform::new(bot, top));
         return rand * distance;
     }
-    fn distance(&self, team_elem: &TeamElement, pt: &Coord) -> Option<f64> {
+    fn distance(&mut self, team_elem: &TeamElement, pt: &Coord) -> Option<f64> {
         if self.is_blocked(pt) {
             return None;
         }

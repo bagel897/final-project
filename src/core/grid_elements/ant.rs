@@ -3,8 +3,6 @@ use std::{collections::VecDeque, fmt::Display};
 use colored::{Color, Colorize};
 use image::Rgb;
 use rand::prelude::IteratorRandom;
-use rand::rngs::SmallRng;
-use rand::SeedableRng;
 use strum::IntoEnumIterator;
 
 use crate::core::grid_elements::state::State;
@@ -355,7 +353,6 @@ impl Ant {
     }
     fn get_dist(&self, pos: &Coord, grid: &AntGrid) -> Option<f64> {
         let res = match &self.state {
-            State::Battle { rage: _ } => grid.distance_to_enemy(&pos, &self.team)?,
             State::Targeted {
                 prev_state: _,
                 coord,
@@ -366,11 +363,10 @@ impl Ant {
         return Some(res);
     }
     fn random_dir(&self, grid: &mut AntGrid) -> Coord {
-        let mut rng = SmallRng::from_entropy();
-        return Dir::iter()
+        let options: Vec<Coord> = Dir::iter()
             .filter_map(|dir| self.pos.next_cell(&dir))
             .filter(|pos| !grid.is_blocked(pos))
-            .choose(&mut rng)
-            .unwrap_or(self.pos);
+            .collect();
+        return *options.iter().choose(&mut grid.rng).unwrap_or(&self.pos);
     }
 }
