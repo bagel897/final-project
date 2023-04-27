@@ -3,10 +3,11 @@ pub(crate) struct Options {
     pub smell: f64,
     pub starting_food: usize,
     pub signal_radius: f64,
-    pub dirt_penalty: f64,
+    pub dirt_penalty: usize,
     pub speed: usize,
     pub propagation: usize,
     pub decay: usize,
+    pub rage: usize,
 }
 
 impl Default for Options {
@@ -17,7 +18,8 @@ impl Default for Options {
             signal_radius: 2.0,
             speed: 20,
             propagation: 3,
-            dirt_penalty: 1.2,
+            dirt_penalty: 5,
+            rage: 10,
             decay: 1000,
         };
     }

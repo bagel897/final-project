@@ -163,6 +163,8 @@ impl eframe::App for GUIrunner {
                 egui::Slider::new(&mut self.options.starting_food, 1..=100).text("Starting Food"),
             );
             ui.add(egui::Slider::new(&mut self.options.propagation, 0..=10).text("propagation"));
+            ui.add(egui::Slider::new(&mut self.options.dirt_penalty, 1..=50).text("Dirt Penalty"));
+            ui.add(egui::Slider::new(&mut self.options.rage, 0..=100).text("Ant rage"));
 
             // if ui.button("Add food (random)").clicked() {
             //     self.runner.put_food(1);

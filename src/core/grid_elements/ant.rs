@@ -25,9 +25,8 @@ pub(crate) struct Ant {
     health: usize,
     signals: VecDeque<Signal>,
     init_propagate: usize,
+    rage: usize,
 }
-
-const INIT_RAGE: usize = 10;
 
 impl GridElement for Ant {
     fn pos(&self) -> &Coord {
@@ -40,10 +39,11 @@ impl GridElement for Ant {
     fn decide(&mut self, grid: &mut AntGrid) -> Coord {
         self.init();
         self.init_propagate = grid.options.propagation;
+        self.rage = grid.options.rage;
         if let State::Dirt { prev_state: _ } = &self.get_state() {
         } else {
             if !grid.hive_exists(self.team) {
-                self.state = Battle { rage: INIT_RAGE };
+                self.state = Battle { rage: self.rage };
             }
         }
         let res = match &self.state {
@@ -100,7 +100,7 @@ impl GridElement for Ant {
     fn attacked(&mut self, damage: usize) {
         self.health = self.health.checked_sub(damage).unwrap_or(0);
         if let Food { pheromones: _ } = self.get_state() {
-            self.state = State::Battle { rage: INIT_RAGE };
+            self.state = State::Battle { rage: self.rage };
         }
     }
     fn color(&self) -> Rgb<u8> {
@@ -177,6 +177,7 @@ impl Ant {
             health: team.health,
             signals: VecDeque::new(),
             init_propagate: 0,
+            rage: 0,
         };
     }
     fn init(&mut self) {
@@ -293,10 +294,7 @@ impl Ant {
     fn pick_best_pheromones(&mut self, grid: &mut AntGrid) -> Option<Coord> {
         let cur = grid.get_pheromones(&self.pos, self.team, !self.state.get_bool());
 
-        let cells: Vec<Coord> = Dir::iter()
-            .filter_map(|d| self.pos.next_cell(&d))
-            .filter(|p| !grid.is_blocked(p))
-            .collect();
+        let cells = self.get_nearby(grid);
         return cells
             .iter()
             .map(|pos| {
@@ -306,6 +304,13 @@ impl Ant {
             .filter(|(_, p)| *p < cur)
             .min_by_key(|(_, p)| *p)
             .map(|(pos, _)| pos);
+    }
+
+    fn get_nearby(&self, grid: &mut AntGrid) -> Vec<Coord> {
+        return Dir::iter()
+            .filter_map(|d| self.pos.next_cell(&d))
+            .filter(|p| !grid.is_blocked(p))
+            .collect();
     }
     fn a_star_find(&self, grid: &AntGrid) -> Coord {
         return Dir::iter()
@@ -351,7 +356,7 @@ impl Ant {
                 },
                 self.team_element(),
             );
-            self.state = State::Battle { rage: INIT_RAGE };
+            self.state = State::Battle { rage: self.rage };
             if attack {
                 grid.attack(&coord, &self.team);
             }
@@ -382,18 +387,17 @@ impl Ant {
         return Some(res);
     }
     fn random_dir(&self, grid: &mut AntGrid) -> Coord {
-        let options: Vec<Coord> = Dir::iter()
-            .filter_map(|dir| self.pos.next_cell(&dir))
-            .filter(|pos| !grid.is_blocked(pos))
-            .collect();
+        let options: Vec<Coord> = self.get_nearby(grid);
         if options.len() == 0 {
             return self.pos;
         }
-        let index = WeightedIndex::new(
-            options
-                .iter()
-                .map(|pos| if grid.is_dirt(pos) { 1 } else { 5 }),
-        )
+        let index = WeightedIndex::new(options.iter().map(|pos| {
+            if grid.is_dirt(pos) {
+                1
+            } else {
+                grid.options.dirt_penalty
+            }
+        }))
         .unwrap();
 
         return options[index.sample(&mut grid.rng)];
