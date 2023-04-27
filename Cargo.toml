@@ -14,7 +14,7 @@ image = { version = "0.24.6", default-features = false, features = ["rgb"] }
 multimap = { version = "0.9.0", default-features = false }
 puffin = "0.15.0"
 puffin_egui = "0.21.0"
-rand = { version = "0.8.5", features = ["small_rng", "simd_support", "nightly"], default-features = true }
+rand = { version = "0.8.5", features = ["small_rng", "simd_support", "nightly", "alloc"], default-features = true }
 strum = "0.24.1"
 strum_macros = "0.24.3"
 tracing = "0.1.37"

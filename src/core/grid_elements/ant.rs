@@ -2,7 +2,8 @@ use std::{collections::VecDeque, fmt::Display};
 
 use colored::{Color, Colorize};
 use image::Rgb;
-use rand::prelude::IteratorRandom;
+use rand::distributions::WeightedIndex;
+use rand::prelude::{Distribution, IteratorRandom};
 use strum::IntoEnumIterator;
 
 use crate::core::grid_elements::state::State;
@@ -367,6 +368,16 @@ impl Ant {
             .filter_map(|dir| self.pos.next_cell(&dir))
             .filter(|pos| !grid.is_blocked(pos))
             .collect();
-        return *options.iter().choose(&mut grid.rng).unwrap_or(&self.pos);
+        if options.len() == 0 {
+            return self.pos;
+        }
+        let index = WeightedIndex::new(
+            options
+                .iter()
+                .map(|pos| if grid.is_dirt(pos) { 1 } else { 5 }),
+        )
+        .unwrap();
+
+        return options[index.sample(&mut grid.rng)];
     }
 }
