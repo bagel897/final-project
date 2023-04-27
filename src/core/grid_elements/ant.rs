@@ -244,16 +244,21 @@ impl Ant {
                     self.state = Food { pheromones: 0 };
                     return true;
                 }
-                if grid.is_same_team_elem(&pos, &self.team_element()) {
-                    match grid.pass_food(&pos, *pheromones) {
-                        None => (),
-                        Some(pheromones) => {
-                            self.state = Food {
-                                pheromones: pheromones + 1,
-                            };
-                        }
-                    }
-                }
+                // if grid.is_same_team_elem(&pos, &self.team_element()) {
+                //     if grid.get_pheromones(&pos, self.team, !self.state.get_bool())
+                //         < grid.get_pheromones(&self.pos, self.team, !self.state.get_bool())
+                //     {
+                //         match grid.pass_food(&pos, *pheromones) {
+                //             None => (),
+                //             Some(pheromones) => {
+                //                 self.state = Food {
+                //                     pheromones: pheromones + 1,
+                //                 };
+                //                 return true;
+                //             }
+                //         }
+                //     }
+                // }
                 return false;
             }
             Food {
@@ -286,7 +291,7 @@ impl Ant {
         }
     }
     fn pick_best_pheromones(&mut self, grid: &mut AntGrid) -> Option<Coord> {
-        let cur = grid.get_pheromones(self.pos(), self.team, !self.state.get_bool());
+        let cur = grid.get_pheromones(&self.pos, self.team, !self.state.get_bool());
 
         let cells: Vec<Coord> = Dir::iter()
             .filter_map(|d| self.pos.next_cell(&d))

@@ -12,6 +12,7 @@ use super::{
     grid_elements::{grid_element::GridElement, hive::Hive},
     Dirt, Food,
 };
+
 pub(crate) trait Runner {
     fn put<T: GridElement + 'static>(&mut self, elem: T);
     fn set_opts(&mut self, options: Options);
@@ -19,11 +20,13 @@ pub(crate) trait Runner {
     fn export(&mut self) -> Export;
     fn run(&mut self) {}
 }
+
 pub(crate) struct BaseRunner {
     pub grid: AntGrid,
     pub(crate) teams: Vec<Team>,
     frames: usize,
 }
+
 impl Runner for BaseRunner {
     fn put<T: GridElement + 'static>(&mut self, elem: T) {
         self.put_raw(Rc::new(RefCell::new(elem)));
@@ -47,6 +50,7 @@ impl Runner for BaseRunner {
         self.run_dynamic();
     }
 }
+
 impl BaseRunner {
     pub fn put_raw(&mut self, elem: Rc<RefCell<dyn GridElement>>) {
         self.grid.put_raw(elem);
@@ -65,13 +69,14 @@ impl BaseRunner {
         self.put_team(Rgb([255, 0, 0]), "Red");
         self.put_team(Rgb([255, 0, 255]), "Purple");
         self.put_team(Rgb([255, 255, 0]), "Yellow");
-        for _ in 0..((self.grid.rows() * self.grid.cols()) / 2) {
-            let c = self.rand_coord();
-            self.grid.put(Dirt::new(&c));
-        }
         for _ in 0..((self.grid.rows() * self.grid.cols()) / 100) {
             let c = self.rand_coord();
             self.grid.put(Food::new(&c));
+        }
+        for x in 0..self.grid.cols() {
+            for y in 0..self.grid.rows() {
+                self.grid.put(Dirt::new(&Coord { x, y }));
+            }
         }
     }
     fn rand_coord(&mut self) -> Coord {
