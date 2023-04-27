@@ -80,15 +80,6 @@ impl AntGrid {
         let ant = self.grid.get(coord).elem.clone().unwrap();
         let mut other_entity = ant.borrow_mut();
         other_entity.attacked(1);
-        if other_entity.is_removed() {
-            self.grid.get_mut(other_entity.pos()).elem = None;
-            let team_elem = other_entity.team_element();
-            drop(other_entity);
-            self.elements
-                .get_vec_mut(&team_elem)
-                .unwrap()
-                .drain_filter(|e| e.borrow().is_removed());
-        }
     }
     pub(super) fn eat_food(&mut self, coord: &Coord) {
         assert!(self.is_food(coord));
@@ -134,7 +125,7 @@ impl AntGrid {
         }
         let ant = self.grid.get(coord).get_elem();
         let elem = ant.borrow().team_element();
-        return elem == *team_elem;
+        return elem == *team_elem && !ant.borrow().is_removed();
     }
     pub(super) fn hive_exists(&mut self, team: Team) -> bool {
         return self
